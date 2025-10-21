@@ -109,6 +109,20 @@ const int CAP_PACIENTOS_DOCTOR_INICIAL = 5;
 const int CAP_CITAS_DOCTOR_INICIAL = 10;
 
 //Funciones
+void mostrarDatosHospital(Hospital* h) {
+    system("pause");
+    system("cls");
+    cout << "\nDatos del Hospital:\n";
+    cout << "Nombre: " << h->nombre << "\n";
+    cout << "Direccion: " << h->direccion << "\n";
+    cout << "Telefono: " << h->telefono << "\n";
+    cout << "Cantidad de Pacientes: " << h->cantidadPacientes << "\n";
+    cout << "Cantidad de Doctores: " << h->cantidadDoctores << "\n";
+    cout << "Cantidad de Citas: " << h->cantidadCitas << "\n";
+    system("pause");
+    system("cls");
+}
+
 void limpiarBufferEntrada() {
     cin.ignore(256, '\n');
 }
@@ -271,10 +285,10 @@ void inicializarPacienteEstructura(Paciente& p) {
     p.activo = true;
 }
 
-Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, const char* cedula, int edad, char sexo) {
+Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, const char* cedula, int edad, char sexo, const char* tipoSangre, const char* telefono, const char* direccion, const char* email) {
     if (!validarCedula(cedula)) return nullptr;
     if (edad < 0 || edad > 120) return nullptr;
-    if (!(sexo=='M' || sexo=='F')) return nullptr;
+    if (!(sexo=='M' || sexo == 'm' || sexo=='f' || sexo=='F')) return nullptr;
     // verificar cedula unica
     for (int i=0;i<h->cantidadPacientes;i++) {
         if (strcmp(h->pacientes[i].cedula, cedula) == 0) return nullptr;
@@ -288,10 +302,23 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
     strncpy(p.cedula, cedula, sizeof(p.cedula)-1); p.cedula[sizeof(p.cedula)-1] = '\0';
     p.edad = edad;
     p.sexo = sexo;
-    p.tipoSangre[0] = '\0';
-    p.telefono[0] = '\0';
-    p.direccion[0] = '\0';
-    p.email[0] = '\0';
+    // Copiar campos opcionales si se proporcionan
+    if (tipoSangre && tipoSangre[0] != '\0') {
+        strncpy(p.tipoSangre, tipoSangre, sizeof(p.tipoSangre)-1);
+        p.tipoSangre[sizeof(p.tipoSangre)-1] = '\0';
+    } else p.tipoSangre[0] = '\0';
+    if (telefono && telefono[0] != '\0') {
+        strncpy(p.telefono, telefono, sizeof(p.telefono)-1);
+        p.telefono[sizeof(p.telefono)-1] = '\0';
+    } else p.telefono[0] = '\0';
+    if (direccion && direccion[0] != '\0') {
+        strncpy(p.direccion, direccion, sizeof(p.direccion)-1);
+        p.direccion[sizeof(p.direccion)-1] = '\0';
+    } else p.direccion[0] = '\0';
+    if (email && email[0] != '\0' && validarEmail(email)) {
+        strncpy(p.email, email, sizeof(p.email)-1);
+        p.email[sizeof(p.email)-1] = '\0';
+    } else p.email[0] = '\0';
     inicializarPacienteEstructura(p);
     h->cantidadPacientes++;
     return &h->pacientes[idx];
@@ -406,15 +433,18 @@ bool eliminarPaciente(Hospital* h, int id) {
 }
 
 void listarPacientes(Hospital* h) {
-    cout << "\nID  Nombre                Cedula         Edad  Consultas\n";
-    cout << "---------------------------------------------------------\n";
+    cout << "\nID  Nombre                Cedula         Edad  TS   Telefono        Email                         Consultas\n";
+    cout << "-----------------------------------------------------------------------------------------------\n";
     for (int i=0;i<h->cantidadPacientes;i++) {
         Paciente& p = h->pacientes[i];
         char full[120]; full[0]='\0';
         strncat(full, p.nombre, sizeof(full)-1);
         strncat(full, " ", sizeof(full)-1);
         strncat(full, p.apellido, sizeof(full)-1);
-        cout << setw(3) << p.id << "  " << setw(20) << full << "  " << setw(12) << p.cedula << "  " << setw(4) << p.edad << "  " << setw(8) << p.cantidadConsultas << "\n";
+        cout << setw(3) << p.id << "  " << setw(20) << full << "  " << setw(12) << p.cedula
+             << "  " << setw(4) << p.edad << "  " << setw(4) << p.tipoSangre
+             << "  " << setw(14) << p.telefono << "  " << setw(28) << p.email
+             << "  " << setw(8) << p.cantidadConsultas << "\n";
     }
 }
 
@@ -758,16 +788,28 @@ void mostrarMenuPrincipal() {
     cout << "----------------------------------------\n";
     cout << "|   SISTEMA DE GESTION HOSPITALARIO     |\n";
     cout << "----------------------------------------\n";
-    cout << "1. Gestion de Pacientes\n2. Gestion de Doctores\n3. Gestion de Citas\n4. Listar Pacientes\n5. Listar Doctores\n6. Listar Citas Pendientes\n0. Salir\nElija una opcion: ";
+    cout << "1. Gestion de Pacientes\n2. Gestion de Doctores\n3. Gestion de Citas\n4. Mostrar Datos del Hospital\n5. Opciones Avanzadas\n0. Salir\nElija una opcion: ";
 }
 
+void menuOpcionesAvanzadas(Hospital* h) {
+    int op=-1;
+   
+        system("pause");
+        system("cls");
+        cout << "\n--- Menu Opciones Avanzadas ---\n1. Destruir Hospital\nElija: ";
+        cin >> op;
+        if (op == 1) {
+          
+}
+    
+}
 void menuPacientes(Hospital* h) {
     int op=-1;
      
     do {
         system("pause");
         system("cls");
-        cout << "\n--- Menu Pacientes ---\n1. Registrar paciente\n2. Buscar paciente por cedula\n3. Buscar paciente por nombre\n4. Ver historial\n5. Actualizar paciente\n6. Listar todos\n7. Eliminar paciente\n0. Volver\nElija: ";
+        cout << "\n--- Menu Pacientes ---\n1. Registrar paciente\n2. Buscar paciente por cedula\n3. Buscar paciente por nombre\n4. Buscar paciente por ID\n5. Ver historial\n6. Actualizar paciente\n7. Listar todos\n8. Eliminar paciente\n0. Volver\nElija: ";
         op = leerEntero();
         if (op == -1) { cout << "Entrada invalida.\n"; continue; }
         if (op == 1) {
@@ -777,16 +819,21 @@ void menuPacientes(Hospital* h) {
             cout << "Cedula: "; leerLinea(cedula,20);
             cout << "Edad: "; edad = leerEntero();
             cout << "Sexo (M/F): "; cin >> sexo;
-            Paciente* p = crearPaciente(h, nombre, apellido, cedula, edad, sexo);
+            cout << "Tipo sangre: "; limpiarBufferEntrada(); char tipoSangre[5]; leerLinea(tipoSangre,5);
+            cout << "Telefono: "; char telefono[15]; leerLinea(telefono,15);
+            cout << "Direccion: "; char direccion[100]; leerLinea(direccion,100);
+            cout << "Email: "; char email[50]; leerLinea(email,50);
+            Paciente* p = crearPaciente(h, nombre, apellido, cedula, edad, sexo, tipoSangre, telefono, direccion, email);
             if (p) cout << "Paciente creado, ID: " << p->id << "\n";
-           
             else cout << "Error al crear paciente (cedula duplicada o datos invalidos).\n";
         } else if (op == 2) {
+            // Buscar por cédula
             char ced[20]; cout << "Cedula: "; limpiarBufferEntrada(); leerLinea(ced,20);
             Paciente* p = buscarPacientePorCedula(h, ced);
-            if (p) cout << "Encontrado: " << p->nombre << " " << p->apellido << "\n";
+            if (p) cout << "Encontrado: " << p->nombre << " " << p->apellido << " (ID " << p->id << ")\n";
             else cout << "No encontrado.\n";
         } else if (op == 3) {
+            // Buscar por nombre
             char nombre[50]; cout << "Nombre parcial: "; limpiarBufferEntrada(); leerLinea(nombre,50);
             int cnt; Paciente** res = buscarPacientesPorNombre(h, nombre, &cnt);
             if (!res) cout << "No se encontraron pacientes.\n";
@@ -796,19 +843,42 @@ void menuPacientes(Hospital* h) {
                 delete[] res;
             }
         } else if (op == 4) {
+            // Nueva opción: Buscar por ID
+            int id; cout << "ID paciente: "; id = leerEntero();
+            Paciente* p = buscarPacientePorId(h, id);
+            if (!p) {
+                cout << "Paciente no encontrado.\n";
+            } else {
+                cout << "ID: " << p->id << "\n";
+                cout << "Nombre: " << p->nombre << " " << p->apellido << "\n";
+                cout << "Cedula: " << p->cedula << "\n";
+                cout << "Edad: " << p->edad << "  Sexo: " << p->sexo << "\n";
+                cout << "Tipo sangre: " << p->tipoSangre << "\n";
+                cout << "Telefono: " << p->telefono << "\n";
+                cout << "Direccion: " << p->direccion << "\n";
+                cout << "Email: " << p->email << "\n";
+                cout << "Consultas: " << p->cantidadConsultas << "\n";
+                cout << "Alergias: " << p->alergias << "\n";
+                cout << "Observaciones: " << p->observaciones << "\n";
+                cout << "Activo: " << (p->activo ? "Si" : "No") << "\n";
+            }
+        } else if (op == 5) {
+            // Ver historial (antes opción 4)
             int id; cout << "ID paciente: "; id = leerEntero();
             Paciente* p = buscarPacientePorId(h, id);
             if (!p) cout << "No encontrado.\n";
             else mostrarHistorialMedico(p);
-        } else if (op == 5) {
+        } else if (op == 6) {
             int id; cout << "ID paciente: "; id = leerEntero();
             if (!actualizarPaciente(h, id)) cout << "No se pudo actualizar.\n";
-        } else if (op == 6) {
-            listarPacientes(h);
         } else if (op == 7) {
+            listarPacientes(h);
+        } else if (op == 8) {
             int id; cout << "ID a eliminar: "; id = leerEntero();
             if (eliminarPaciente(h, id)) cout << "Paciente eliminado.\n"; else cout << "No se pudo eliminar.\n";
-        } else if (op == 0) break;
+        } else if (op == 0) {
+            system("cls");
+            break;}
         else cout << "Opcion invalida.\n";
     } while (op != 0);
 }
@@ -938,9 +1008,9 @@ int main() {
     crearDoctor(h, "Ana", "Lopez", "D-0002", "Pediatria", 5, 35.0f);
     crearDoctor(h, "Luis", "Martinez", "D-0003", "Traumatologia", 8, 45.0f);
 
-    crearPaciente(h, "Juan", "Perez", "V-100", 35, 'M');
-    crearPaciente(h, "Maria", "Gonzalez", "V-101", 28, 'F');
-    crearPaciente(h, "Juana", "Garcia", "V-102", 22, 'F');
+    crearPaciente(h, "Juan", "Perez", "V-100", 35, 'M', "O+", "0414-1234567", "Calle Falsa 123", "emaildeprueba1@gmail.com");
+    crearPaciente(h, "Maria", "Gonzalez", "V-101", 28, 'F', "A-", "0424-7654321", "Avenida Siempre Viva 742", "gmaildepruebas@gmail.com ");
+    crearPaciente(h, "Juana", "Garcia", "V-102", 22, 'F', "B+", "0412-1112222", "Boulevard de los Sueños Rotos 456", " gmaildeprueeba@gmail.com");
 
     int opcion = -1;
     do {
@@ -951,9 +1021,8 @@ int main() {
             case 1: menuPacientes(h); break;
             case 2: menuDoctores(h); break;
             case 3: menuCitas(h); break;
-            case 4: listarPacientes(h); break;
-            case 5: listarDoctores(h); break;
-            case 6: listarCitasPendientes(h); break;
+            case 4: mostrarDatosHospital(h); break;
+            case 5: menuOpcionesAvanzadas(h); break;
             case 0: cout << "Saliendo...\n"; break;
             default: cout << "Opcion invalida.\n"; break;
         }

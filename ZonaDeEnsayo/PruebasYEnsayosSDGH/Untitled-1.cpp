@@ -799,10 +799,13 @@ void menuOpcionesAvanzadas(Hospital* h) {
         cout << "\n--- Menu Opciones Avanzadas ---\n1. Destruir Hospital\nElija: ";
         cin >> op;
         if (op == 1) {
+            destruirHospital(h);
+            cout << "C4 Plantado. Hospital destruido. \n";
+        }
+     
           
 }
     
-}
 void menuPacientes(Hospital* h) {
     int op=-1;
      
@@ -937,7 +940,9 @@ void menuDoctores(Hospital* h) {
         } else if (op == 7) {
             int id; cout << "ID a eliminar: "; id = leerEntero();
             if (eliminarDoctor(h, id)) cout << "Doctor eliminado.\n"; else cout << "No se pudo eliminar.\n";
-        } else if (op == 0) break;
+        } else if (op == 0) {
+            system("cls");
+            break;}
         else cout << "Opcion invalida.\n";
     } while (op != 0);
 }
@@ -992,7 +997,9 @@ void menuCitas(Hospital* h) {
             }
         } else if (op == 7) {
             listarCitasPendientes(h);
-        } else if (op == 0) break;
+        } else if (op == 0) { 
+            system("cls");
+            break;}
         else cout << "Opcion invalida.\n";
     } while (op != 0);
 }

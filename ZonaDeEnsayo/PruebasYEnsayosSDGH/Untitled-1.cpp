@@ -200,9 +200,17 @@ int compararFechas(const char* f1, const char* f2) {
 
 Hospital* crearHospital(const char* nombreHospital, const char* direccion, const char* telefono) {
     Hospital* h = new Hospital;
-    strncpy(h->nombre, nombreHospital, sizeof(h->nombre)-1); h->nombre[sizeof(h->nombre)-1] = '\0';
-    strncpy(h->direccion, direccion, sizeof(h->direccion)-1); h->direccion[sizeof(h->direccion)-1] = '\0';
-    strncpy(h->telefono, telefono, sizeof(h->telefono)-1); h->telefono[sizeof(h->telefono)-1] = '\0';
+    
+    // Inicializar TODOS los campos a cero/null
+    memset(h, 0, sizeof(Hospital));  // Esto pone todo a cero
+    
+    // Ahora configurar valores específicos
+    strncpy(h->nombre, nombreHospital, sizeof(h->nombre)-1); 
+    h->nombre[sizeof(h->nombre)-1] = '\0';
+    strncpy(h->direccion, direccion, sizeof(h->direccion)-1); 
+    h->direccion[sizeof(h->direccion)-1] = '\0';
+    strncpy(h->telefono, telefono, sizeof(h->telefono)-1); 
+    h->telefono[sizeof(h->telefono)-1] = '\0';
 
     h->capacidadPacientes = CAP_PACIENTES_INICIAL;
     h->capacidadDoctores = CAP_DOCTORES_INICIAL;
@@ -221,16 +229,25 @@ Hospital* crearHospital(const char* nombreHospital, const char* direccion, const
     h->doctores = new Doctor[h->capacidadDoctores];
     h->citas = new Cita[h->capacidadCitas];
 
-    // Inicializar arrays internos vacios (importantisimo cuando se libere)
+    // Inicializar arrays internos
     for (int i=0;i<h->capacidadPacientes;i++) {
         h->pacientes[i].historial = nullptr;
         h->pacientes[i].citasAgendadas = nullptr;
+        h->pacientes[i].cantidadConsultas = 0;
+        h->pacientes[i].capacidadHistorial = 0;
+        h->pacientes[i].cantidadCitas = 0;
+        h->pacientes[i].capacidadCitas = 0;
     }
     for (int i=0;i<h->capacidadDoctores;i++) {
         h->doctores[i].pacientesAsignados = nullptr;
         h->doctores[i].citasAgendadas = nullptr;
+        h->doctores[i].cantidadPacientes = 0;
+        h->doctores[i].capacidadPacientes = 0;
+        h->doctores[i].cantidadCitas = 0;
+        h->doctores[i].capacidadCitas = 0;
     }
 
+    cout << "Hospital creado exitosamente.\n";
     return h;
 }
 
@@ -433,19 +450,35 @@ bool eliminarPaciente(Hospital* h, int id) {
 }
 
 void listarPacientes(Hospital* h) {
-    cout << "\nID  Nombre                Cedula         Edad  TS   Telefono        Email                         Consultas\n";
-    cout << "-----------------------------------------------------------------------------------------------\n";
-    for (int i=0;i<h->cantidadPacientes;i++) {
+    if (!h) {
+        cout << "ERROR: Hospital ha sido destruido (puntero nulo).\n";
+        return;
+    }
+    
+    // Verificar que los contadores sean consistentes
+    if (h->cantidadPacientes > h->capacidadPacientes) {
+        cout << "ERROR: Contadores inconsistentes!\n";
+        return;
+    }
+    
+    cout << "\nID  Nombre                Cedula         Edad  TS   Telefono        Consultas\n";
+    cout << "----------------------------------------------------------------\n";
+    
+    for (int i=0; i < h->cantidadPacientes; i++) {
         Paciente& p = h->pacientes[i];
-        char full[120]; full[0]='\0';
-        strncat(full, p.nombre, sizeof(full)-1);
-        strncat(full, " ", sizeof(full)-1);
-        strncat(full, p.apellido, sizeof(full)-1);
-        cout << setw(3) << p.id << "  " << setw(20) << full << "  " << setw(12) << p.cedula
-             << "  " << setw(4) << p.edad << "  " << setw(4) << p.tipoSangre
-             << "  " << setw(14) << p.telefono << "  " << setw(28) << p.email
+        // Verificar que el paciente sea válido
+        if (p.id <= 0) continue;
+        
+        char full[120]; 
+        snprintf(full, sizeof(full), "%s %s", p.nombre, p.apellido);
+        
+        cout << setw(3) << p.id << "  " << setw(20) << full << "  " 
+             << setw(12) << p.cedula << "  " << setw(4) << p.edad << "  " 
+             << setw(4) << p.tipoSangre << "  " << setw(14) << p.telefono
              << "  " << setw(8) << p.cantidadConsultas << "\n";
     }
+    
+    cout << "Total: " << h->cantidadPacientes << " pacientes\n";
 }
 
 // ====================== HISTORIAL MEDICO ======================
@@ -756,20 +789,78 @@ void listarCitasPendientes(Hospital* h) {
 
 // ====================== DESTRUCCION ======================
 
-void destruirHospital(Hospital* h) {
+void destruirHospital(Hospital*& h) {  // Cambio importante: referencia a puntero
     if (!h) return;
-    for (int i=0;i<h->cantidadPacientes;i++) {
-        if (h->pacientes[i].historial) delete[] h->pacientes[i].historial;
-        if (h->pacientes[i].citasAgendadas) delete[] h->pacientes[i].citasAgendadas;
+    
+    cout << "Destruyendo hospital...\n";
+    
+    // 1. Liberar memoria interna de pacientes
+    for (int i = 0; i < h->cantidadPacientes; i++) {
+        Paciente& p = h->pacientes[i];
+        if (p.historial) {
+            delete[] p.historial;
+            p.historial = nullptr;
+        }
+        if (p.citasAgendadas) {
+            delete[] p.citasAgendadas;
+            p.citasAgendadas = nullptr;
+        }
+        // Resetear contadores del paciente
+        p.cantidadConsultas = 0;
+        p.capacidadHistorial = 0;
+        p.cantidadCitas = 0;
+        p.capacidadCitas = 0;
     }
-    for (int i=0;i<h->cantidadDoctores;i++) {
-        if (h->doctores[i].pacientesAsignados) delete[] h->doctores[i].pacientesAsignados;
-        if (h->doctores[i].citasAgendadas) delete[] h->doctores[i].citasAgendadas;
+    
+    // 2. Liberar memoria interna de doctores
+    for (int i = 0; i < h->cantidadDoctores; i++) {
+        Doctor& d = h->doctores[i];
+        if (d.pacientesAsignados) {
+            delete[] d.pacientesAsignados;
+            d.pacientesAsignados = nullptr;
+        }
+        if (d.citasAgendadas) {
+            delete[] d.citasAgendadas;
+            d.citasAgendadas = nullptr;
+        }
+        // Resetear contadores del doctor
+        d.cantidadPacientes = 0;
+        d.capacidadPacientes = 0;
+        d.cantidadCitas = 0;
+        d.capacidadCitas = 0;
     }
-    delete[] h->pacientes;
-    delete[] h->doctores;
-    delete[] h->citas;
+    
+    // 3. Liberar arrays principales
+    if (h->pacientes) {
+        delete[] h->pacientes;
+        h->pacientes = nullptr;
+    }
+    if (h->doctores) {
+        delete[] h->doctores;
+        h->doctores = nullptr;
+    }
+    if (h->citas) {
+        delete[] h->citas;
+        h->citas = nullptr;
+    }
+    
+    // 4. Resetear TODOS los contadores del hospital
+    h->cantidadPacientes = 0;
+    h->capacidadPacientes = 0;
+    h->cantidadDoctores = 0;
+    h->capacidadDoctores = 0;
+    h->cantidadCitas = 0;
+    h->capacidadCitas = 0;
+    h->siguienteIdPaciente = 1;
+    h->siguienteIdDoctor = 1;
+    h->siguienteIdCita = 1;
+    h->siguienteIdConsulta = 1;
+    
+    // 5. Finalmente liberar el hospital
     delete h;
+    h = nullptr;  // ¡IMPORTANTE! Establecer a nullptr
+    
+    cout << "Hospital destruido completamente.\n";
 }
 
 // ====================== MENUS ======================
@@ -791,19 +882,17 @@ void mostrarMenuPrincipal() {
     cout << "1. Gestion de Pacientes\n2. Gestion de Doctores\n3. Gestion de Citas\n4. Mostrar Datos del Hospital\n5. Opciones Avanzadas\n0. Salir\nElija una opcion: ";
 }
 
-void menuOpcionesAvanzadas(Hospital* h) {
-    int op=-1;
-   
-        system("pause");
-        system("cls");
-        cout << "\n--- Menu Opciones Avanzadas ---\n1. Destruir Hospital\nElija: ";
-        cin >> op;
-        if (op == 1) {
-            destruirHospital(h);
-            cout << "C4 Plantado. Hospital destruido. \n";
-        }
-     
-          
+void menuOpcionesAvanzadas(Hospital*& h) {  // Referencia a puntero
+    int op = -1;
+    system("pause");
+    system("cls");
+    cout << "\n--- Menu Opciones Avanzadas ---\n1. Destruir Hospital\n0. Volver\nElija: ";
+    op = leerEntero();
+    if (op == 1) {
+        destruirHospital(h);  // Ahora h se establecerá a nullptr
+        cout << "Hospital destruido exitosamente.\n";
+        // Después de esto, NO debes usar h
+    }
 }
     
 void menuPacientes(Hospital* h) {
@@ -963,7 +1052,7 @@ void menuCitas(Hospital* h) {
             cout << "Hora (HH:MM): "; leerLinea(hora,6);
             cout << "Motivo: "; leerLinea(motivo,150);
             Cita* c = agendarCita(h, idPac, idDoc, fecha, hora, motivo);
-            if (c) cout << "Cita agendada ID: " << c->id << "\n"; else cout << "No se pudo agendar.\n";
+            if (c) cout << "Cita agendada ID: " << c->id << "\n"; else cout << "No se pudo agendar. Verifique que haya introducido tanto fecha como hora con el formato requerido, y que los IDs sean válidos (Ya registrados)\n";
         } else if (op == 2) {
             int id; cout << "ID cita: "; id = leerEntero();
             if (cancelarCita(h, id)) cout << "Cita cancelada.\n"; else cout << "No se pudo cancelar.\n";
@@ -1010,31 +1099,44 @@ int main() {
     setlocale(LC_ALL, "spanish");
     Hospital* h = crearHospital("Hospital Bludsianin", "Av. Principal Poyaminol, cuadra 69", "0212-0000000");
 
-    // Pre-carga minima para pruebas
-    crearDoctor(h, "Carlos", "Perez", "D-0001", "Cardiologia", 10, 50.0f);
-    crearDoctor(h, "Ana", "Lopez", "D-0002", "Pediatria", 5, 35.0f);
-    crearDoctor(h, "Luis", "Martinez", "D-0003", "Traumatologia", 8, 45.0f);
-
-    crearPaciente(h, "Juan", "Perez", "V-100", 35, 'M', "O+", "0414-1234567", "Calle Falsa 123", "emaildeprueba1@gmail.com");
-    crearPaciente(h, "Maria", "Gonzalez", "V-101", 28, 'F', "A-", "0424-7654321", "Avenida Siempre Viva 742", "gmaildepruebas@gmail.com ");
-    crearPaciente(h, "Juana", "Garcia", "V-102", 22, 'F', "B+", "0412-1112222", "Boulevard de los Sueños Rotos 456", " gmaildeprueeba@gmail.com");
-
+    // Pre-carga de datos...
+    
     int opcion = -1;
     do {
+        // VERIFICAR SI EL HOSPITAL EXISTE
+        if (!h) {
+            cout << "El hospital ha sido destruido. ¿Desea crear uno nuevo? (1: Sí, 0: Salir): ";
+            int respuesta = leerEntero();
+            if (respuesta == 1) {
+                h = crearHospital("Hospital Renacido", "Nueva Dirección", "0212-1111111");
+                // Recargar datos básicos si es necesario
+                crearDoctor(h, "Carlos", "Perez", "D-0001", "Cardiologia", 10, 50.0f);
+                crearPaciente(h, "Juan", "Perez", "V-100", 35, 'M', "O+", "0414-1234567", "Calle Falsa 123", "email@gmail.com");
+                cout << "Nuevo hospital creado.\n";
+            } else {
+                opcion = 0;
+            }
+            continue;
+        }
+        
         mostrarMenuPrincipal();
         opcion = leerEntero();
-        if (opcion == -1) { cout << "Entrada invalida.\n"; continue; }
+        
         switch(opcion) {
-            case 1: menuPacientes(h); break;
-            case 2: menuDoctores(h); break;
-            case 3: menuCitas(h); break;
-            case 4: mostrarDatosHospital(h); break;
-            case 5: menuOpcionesAvanzadas(h); break;
+            case 1: if (h) menuPacientes(h); break;
+            case 2: if (h) menuDoctores(h); break;
+            case 3: if (h) menuCitas(h); break;
+            case 4: if (h) mostrarDatosHospital(h); break;
+            case 5: if (h) menuOpcionesAvanzadas(h); break;
             case 0: cout << "Saliendo...\n"; break;
             default: cout << "Opcion invalida.\n"; break;
         }
     } while (opcion != 0);
 
-    destruirHospital(h);
+    // Solo destruir si aún existe
+    if (h) {
+        destruirHospital(h);
+    }
+    
     return 0;
 }

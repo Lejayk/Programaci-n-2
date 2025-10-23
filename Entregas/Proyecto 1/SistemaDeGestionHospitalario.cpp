@@ -111,58 +111,6 @@ const int CAP_PACIENTOS_DOCTOR_INICIAL = 5;
 const int CAP_CITAS_DOCTOR_INICIAL = 10;
 
 // Declaraciones de funciones
-void mostrarDatosHospital(Hospital* h);
-void limpiarBufferEntrada();
-void leerLinea(char* buffer, int size);
-bool validarCedula(const char* cedula);
-bool validarEmail(const char* email);
-bool validarFecha(const char* fecha);
-bool validarHora(const char* hora);
-int compararFechas(const char* f1, const char* f2);
-Hospital* crearHospital(const char* nombreHospital, const char* direccion, const char* telefono);
-void redimensionarArrayPacientes(Hospital* h);
-void redimensionarArrayDoctores(Hospital* h);
-void redimensionarArrayCitas(Hospital* h);
-void inicializarPacienteEstructura(Paciente& p);
-Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, const char* cedula, 
-                       int edad, char sexo, const char* tipoSangre, const char* telefono, 
-                       const char* direccion, const char* email);
-Paciente* buscarPacientePorId(Hospital* h, int id);
-Paciente* buscarPacientePorCedula(Hospital* h, const char* cedula);
-Paciente** buscarPacientesPorNombre(Hospital* h, const char* nombre, int* cantidad);
-bool actualizarPaciente(Hospital* h, int id);
-bool eliminarPaciente(Hospital* h, int id);
-void listarPacientes(Hospital* h);
-void agregarConsultaAlHistorial(Paciente* paciente, HistorialMedico consulta);
-HistorialMedico* obtenerHistorialCompleto(Paciente* paciente, int* cantidad);
-void mostrarHistorialMedico(Paciente* paciente);
-HistorialMedico* obtenerUltimaConsulta(Paciente* paciente);
-void inicializarDoctorEstructura(Doctor& d);
-Doctor* crearDoctor(Hospital* h, const char* nombre, const char* apellido, const char* cedula,
-                   const char* especialidad, int anios, float costo);
-Doctor* buscarDoctorPorId(Hospital* h, int id);
-Doctor** buscarDoctoresPorEspecialidad(Hospital* h, const char* especialidad, int* cantidad);
-bool asignarPacienteADoctor(Doctor* d, int idPaciente);
-bool removerPacienteDeDoctor(Doctor* d, int idPaciente);
-void listarDoctores(Hospital* h);
-bool eliminarDoctor(Hospital* h, int id);
-bool verificarDisponibilidad(Hospital* h, int idDoctor, const char* fecha, const char* hora);
-Cita* agendarCita(Hospital* h, int idPaciente, int idDoctor, const char* fecha, 
-                  const char* hora, const char* motivo);
-bool cancelarCita(Hospital* h, int idCita);
-bool atenderCita(Hospital* h, int idCita, const char* diagnostico, 
-                 const char* tratamiento, const char* medicamentos);
-Cita** obtenerCitasDePaciente(Hospital* h, int idPaciente, int* cantidad);
-Cita** obtenerCitasDeDoctor(Hospital* h, int idDoctor, int* cantidad);
-Cita** obtenerCitasPorFecha(Hospital* h, const char* fecha, int* cantidad);
-void listarCitasPendientes(Hospital* h);
-void destruirHospital(Hospital*& h);
-int leerEntero();
-void mostrarMenuPrincipal();
-void menuOpcionesAvanzadas(Hospital*& h);
-void menuPacientes(Hospital* h);
-void menuDoctores(Hospital* h);
-void menuCitas(Hospital* h);
 
 // Implementación de funciones
 
@@ -400,14 +348,13 @@ void inicializarPacienteEstructura(Paciente& p) {
     p.citasAgendadas = new int[CAP_CITAS_PACIENTE_INICIAL];
     p.cantidadCitas = 0;
     p.capacidadCitas = CAP_CITAS_PACIENTE_INICIAL;
-    p.alergias[0] = '\0';
-    p.observaciones[0] = '\0';
+    // No sobrescribir alergias/observaciones aquí: podrían haberse proporcionado al crear
     p.activo = true;
 }
 
 Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, const char* cedula, 
                        int edad, char sexo, const char* tipoSangre, const char* telefono, 
-                       const char* direccion, const char* email) {
+                       const char* direccion, const char* email, const char* alergias, const char* observaciones) {
     if (!validarCedula(cedula)) {
         cout << "Error: Cédula inválida.\n";
         return nullptr;
@@ -481,7 +428,20 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
     } else {
         p.email[0] = '\0';
     }
-    
+    // Copiar alergias y observaciones proporcionadas
+    if (alergias && alergias[0] != '\0') {
+        strncpy(p.alergias, alergias, sizeof(p.alergias)-1);
+        p.alergias[sizeof(p.alergias)-1] = '\0';
+    } else {
+        p.alergias[0] = '\0';
+    }
+    if (observaciones && observaciones[0] != '\0') {
+        strncpy(p.observaciones, observaciones, sizeof(p.observaciones)-1);
+        p.observaciones[sizeof(p.observaciones)-1] = '\0';
+    } else {
+        p.observaciones[0] = '\0';
+    }
+
     inicializarPacienteEstructura(p);
     h->cantidadPacientes++;
     
@@ -544,7 +504,6 @@ bool actualizarPaciente(Hospital* h, int id) {
     cout << "Dejar vacio para no cambiar.\n";
     
     cout << "Telefono actual: " << p->telefono << "\nNuevo telefono: ";
-    limpiarBufferEntrada(); 
     leerLinea(buffer, 15);
     if (strlen(buffer) > 0) { 
         strncpy(p->telefono, buffer, 14); 
@@ -678,6 +637,12 @@ void listarPacientes(Hospital* h) {
              << "  " << setw(4) << p.edad << "  " << setw(4) << p.tipoSangre
              << "  " << setw(14) << p.telefono << "  " << setw(28) << p.email
              << "  " << setw(8) << p.cantidadConsultas << "\n";
+        if (p.alergias[0] != '\0') {
+            cout << "     Alergias: " << p.alergias << "\n";
+        }
+        if (p.observaciones[0] != '\0') {
+            cout << "     Observaciones: " << p.observaciones << "\n";
+        }
     }
 }
 
@@ -791,6 +756,41 @@ Doctor* buscarDoctorPorId(Hospital* h, int id) {
     return nullptr;
 }
 
+Doctor* buscarDoctorPorCedula(Hospital* h, const char* cedula) {
+    for (int i=0;i<h->cantidadDoctores;i++) {
+        if (strcmp(h->doctores[i].cedula, cedula) == 0) {
+            return &h->doctores[i];
+        }
+    }
+    return nullptr;
+}
+
+Doctor** buscarDoctoresPorNombre(Hospital* h, const char* nombre, int* cantidad) {
+    *cantidad = 0;
+    for (int i=0;i<h->cantidadDoctores;i++) {
+        char full[120];
+        full[0] = '\0';
+        strncat(full, h->doctores[i].nombre, sizeof(full)-1);
+        strncat(full, " ", sizeof(full)-1);
+        strncat(full, h->doctores[i].apellido, sizeof(full)-1);
+        if (strstr(full, nombre) != nullptr) (*cantidad)++;
+    }
+    if (*cantidad == 0) return nullptr;
+    Doctor** res = new Doctor*[*cantidad];
+    int pos = 0;
+    for (int i=0;i<h->cantidadDoctores;i++) {
+        char full[120];
+        full[0] = '\0';
+        strncat(full, h->doctores[i].nombre, sizeof(full)-1);
+        strncat(full, " ", sizeof(full)-1);
+        strncat(full, h->doctores[i].apellido, sizeof(full)-1);
+        if (strstr(full, nombre) != nullptr) {
+            res[pos++] = &h->doctores[i];
+        }
+    }
+    return res;
+}
+
 Doctor** buscarDoctoresPorEspecialidad(Hospital* h, const char* especialidad, int* cantidad) {
     *cantidad = 0;
     for (int i=0;i<h->cantidadDoctores;i++) {
@@ -850,19 +850,23 @@ void listarDoctores(Hospital* h) {
         cout << "No hay doctores registrados.\n";
         return;
     }
-    
-    cout << "\nID  Nombre                Cedula         Especialidad       Anios  Costo\n";
-    cout << "-----------------------------------------------------------------\n";
+    cout << "\nListado de doctores:\n";
+    cout << "---------------------------------------------------------------\n";
     for (int i=0;i<h->cantidadDoctores;i++) {
         Doctor& d = h->doctores[i];
-        char full[120]; 
-        full[0]='\0';
+        char full[200];
+        full[0] = '\0';
         strncat(full, d.nombre, sizeof(full)-1);
         strncat(full, " ", sizeof(full)-1);
         strncat(full, d.apellido, sizeof(full)-1);
-        cout << setw(3) << d.id << "  " << setw(20) << full << "  " << setw(12) << d.cedula 
-             << "  " << setw(15) << d.especialidad << "  " << setw(5) << d.aniosExperiencia
-             << "  " << fixed << setprecision(2) << d.costoConsulta << "\n";
+        cout << "ID: " << d.id << " - " << full << "\n";
+        cout << "  Cedula: " << d.cedula << "  Especialidad: " << d.especialidad << "\n";
+        cout << "  Anios experiencia: " << d.aniosExperiencia << "  Costo: " << fixed << setprecision(2) << d.costoConsulta << "\n";
+        if (d.telefono[0] != '\0') cout << "  Telefono: " << d.telefono << "\n";
+        if (d.email[0] != '\0') cout << "  Email: " << d.email << "\n";
+        if (d.horarioAtencion[0] != '\0') cout << "  Horario: " << d.horarioAtencion << "\n";
+        cout << "  Pacientes asignados: " << d.cantidadPacientes << "  Citas agendadas: " << d.cantidadCitas << "  Disponible: " << (d.disponible ? "Si" : "No") << "\n";
+        cout << "---------------------------------------------------------------\n";
     }
 }
 
@@ -1334,7 +1338,13 @@ void menuPacientes(Hospital* h) {
                 cout << "Email: "; 
                 char email[50]; 
                 leerLinea(email, 50);
-                Paciente* p = crearPaciente(h, nombre, apellido, cedula, edad, sexo, tipoSangre, telefono, direccion, email);
+                cout << "Alergias: ";
+                char alergias[500];
+                leerLinea(alergias, 500);
+                cout << "Observaciones: ";
+                char observaciones[500];
+                leerLinea(observaciones, 500);
+                crearPaciente(h, nombre, apellido, cedula, edad, sexo, tipoSangre, telefono, direccion, email, alergias, observaciones);
                 break;
             }
             case 2: {
@@ -1345,6 +1355,13 @@ void menuPacientes(Hospital* h) {
                 Paciente* p = buscarPacientePorCedula(h, ced);
                 if (p) {
                     cout << "Encontrado: " << p->nombre << " " << p->apellido << " (ID " << p->id << ")\n";
+                    cout << "Cedula: " << p->cedula << "\n";
+                    cout << "Edad: " << p->edad << "  Sexo: " << p->sexo << "\n";
+                    cout << "Telefono: " << p->telefono << "\n";
+                    cout << "Direccion: " << p->direccion << "\n";
+                    cout << "Email: " << p->email << "\n";
+                    cout << "Alergias: " << p->alergias << "\n";
+                    cout << "Observaciones: " << p->observaciones << "\n";
                 } else {
                     cout << "No encontrado.\n";
                 }
@@ -1362,7 +1379,15 @@ void menuPacientes(Hospital* h) {
                 } else {
                     cout << "Resultados:\n";
                     for (int i=0;i<cnt;i++) {
-                        cout << res[i]->id << " - " << res[i]->nombre << " " << res[i]->apellido << "\n";
+                        Paciente* p = res[i];
+                        cout << p->id << " - " << p->nombre << " " << p->apellido << "\n";
+                        cout << "  Cedula: " << p->cedula << "  Edad: " << p->edad << "  Sexo: " << p->sexo << "\n";
+                        cout << "  Telefono: " << p->telefono << "\n";
+                        cout << "  Direccion: " << p->direccion << "\n";
+                        cout << "  Email: " << p->email << "\n";
+                        cout << "  Alergias: " << p->alergias << "\n";
+                        cout << "  Observaciones: " << p->observaciones << "\n";
+                        cout << "---------------------------\n";
                     }
                     delete[] res;
                 }
@@ -1443,13 +1468,15 @@ void menuDoctores(Hospital* h) {
         system("pause");
         system("cls");
         cout << "\n--- Menu Doctores ---\n";
-        cout << "1. Registrar doctor\n";
-        cout << "2. Buscar doctor por ID\n";
-        cout << "3. Buscar doctores por especialidad\n";
-        cout << "4. Asignar paciente a doctor\n";
-        cout << "5. Mostrar pacientes asignados\n";
-        cout << "6. Listar doctores\n";
-        cout << "7. Eliminar doctor\n";
+    cout << "1. Registrar doctor\n";
+    cout << "2. Buscar doctor por ID\n";
+    cout << "3. Buscar doctor por cedula\n";
+    cout << "4. Buscar doctores por nombre\n";
+    cout << "5. Buscar doctores por especialidad\n";
+    cout << "6. Asignar paciente a doctor\n";
+    cout << "7. Mostrar pacientes asignados\n";
+    cout << "8. Listar doctores\n";
+    cout << "9. Eliminar doctor\n";
         cout << "0. Volver\n";
         cout << "Elija: ";
         op = leerEntero();
@@ -1481,7 +1508,33 @@ void menuDoctores(Hospital* h) {
                 }
                 cout << "Costo consulta: "; 
                 cin >> costo;
-                Doctor* d = crearDoctor(h, nombre, apellido, cedula, especialidad, anios, costo);
+                // Limpiar buffer y leer campos opcionales
+                limpiarBufferEntrada();
+                cout << "Telefono (opcional): ";
+                char telefonoDoc[15]; leerLinea(telefonoDoc, 15);
+                cout << "Email (opcional): ";
+                char emailDoc[50]; leerLinea(emailDoc, 50);
+                cout << "Horario atencion (opcional): ";
+                char horarioDoc[50]; leerLinea(horarioDoc, 50);
+                Doctor* nuevo = crearDoctor(h, nombre, apellido, cedula, especialidad, anios, costo);
+                if (nuevo) {
+                    if (telefonoDoc[0] != '\0') {
+                        strncpy(nuevo->telefono, telefonoDoc, sizeof(nuevo->telefono)-1);
+                        nuevo->telefono[sizeof(nuevo->telefono)-1] = '\0';
+                    }
+                    if (emailDoc[0] != '\0') {
+                        if (validarEmail(emailDoc)) {
+                            strncpy(nuevo->email, emailDoc, sizeof(nuevo->email)-1);
+                            nuevo->email[sizeof(nuevo->email)-1] = '\0';
+                        } else {
+                            cout << "Email doctor invalido, no se guardo.\n";
+                        }
+                    }
+                    if (horarioDoc[0] != '\0') {
+                        strncpy(nuevo->horarioAtencion, horarioDoc, sizeof(nuevo->horarioAtencion)-1);
+                        nuevo->horarioAtencion[sizeof(nuevo->horarioAtencion)-1] = '\0';
+                    }
+                }
                 break;
             }
             case 2: {
@@ -1490,13 +1543,58 @@ void menuDoctores(Hospital* h) {
                 id = leerEntero();
                 Doctor* d = buscarDoctorPorId(h, id);
                 if (d) {
-                    cout << "Encontrado: " << d->nombre << " " << d->apellido << "\n";
+                    cout << "ID: " << d->id << "\n";
+                    cout << "Nombre: " << d->nombre << " " << d->apellido << "\n";
+                    cout << "Cedula: " << d->cedula << "\n";
+                    cout << "Especialidad: " << d->especialidad << "\n";
+                    cout << "Anios experiencia: " << d->aniosExperiencia << "\n";
+                    cout << "Costo consulta: " << fixed << setprecision(2) << d->costoConsulta << "\n";
+                    cout << "Telefono: " << d->telefono << "\n";
+                    cout << "Email: " << d->email << "\n";
+                    cout << "Horario: " << d->horarioAtencion << "\n";
+                    cout << "Pacientes asignados: " << d->cantidadPacientes << "\n";
+                    cout << "Citas agendadas: " << d->cantidadCitas << "\n";
+                    cout << "Disponible: " << (d->disponible ? "Si" : "No") << "\n";
                 } else {
                     cout << "No encontrado.\n";
                 }
                 break;
             }
             case 3: {
+                // buscador por cedula
+                char ced[20];
+                cout << "Cedula profesional: "; limpiarBufferEntrada(); leerLinea(ced, 20);
+                Doctor* dced = buscarDoctorPorCedula(h, ced);
+                if (dced) {
+                    cout << "ID: " << dced->id << " - " << dced->nombre << " " << dced->apellido << "\n";
+                    cout << "  Especialidad: " << dced->especialidad << "  Anios: " << dced->aniosExperiencia << "\n";
+                    cout << "  Telefono: " << dced->telefono << "  Email: " << dced->email << "  Horario: " << dced->horarioAtencion << "\n";
+                } else {
+                    cout << "No encontrado.\n";
+                }
+                break;
+            }
+            case 4: {
+                // buscador por nombre parcial
+                char nombreBus[50];
+                cout << "Nombre parcial: "; limpiarBufferEntrada(); leerLinea(nombreBus, 50);
+                int cntN;
+                Doctor** resN = buscarDoctoresPorNombre(h, nombreBus, &cntN);
+                if (!resN) {
+                    cout << "No se encontraron doctores.\n";
+                } else {
+                    for (int i=0;i<cntN;i++) {
+                        Doctor* dn = resN[i];
+                        cout << dn->id << " - " << dn->nombre << " " << dn->apellido << "\n";
+                        cout << "  Cedula: " << dn->cedula << "  Especialidad: " << dn->especialidad << "\n";
+                        cout << "  Telefono: " << dn->telefono << "  Email: " << dn->email << "  Horario: " << dn->horarioAtencion << "\n";
+                        cout << "---------------------------\n";
+                    }
+                    delete[] resN;
+                }
+                break;
+            }
+            case 5: {
                 char esp[50]; 
                 cout << "Especialidad: "; 
                 limpiarBufferEntrada(); 
@@ -1513,7 +1611,7 @@ void menuDoctores(Hospital* h) {
                 }
                 break;
             }
-            case 4: {
+            case 6: {
                 int idDoc, idPac; 
                 cout << "ID doctor: "; 
                 idDoc = leerEntero();
@@ -1528,7 +1626,7 @@ void menuDoctores(Hospital* h) {
                 }
                 break;
             }
-            case 5: {
+            case 7: {
                 int id; 
                 cout << "ID doctor: "; 
                 id = leerEntero();
@@ -1546,11 +1644,11 @@ void menuDoctores(Hospital* h) {
                 }
                 break;
             }
-            case 6: {
+            case 8: {
                 listarDoctores(h);
                 break;
             }
-            case 7: {
+            case 9: {
                 int id; 
                 cout << "ID a eliminar: "; 
                 id = leerEntero();
@@ -1608,7 +1706,7 @@ void menuCitas(Hospital* h) {
                 leerLinea(hora, 6);
                 cout << "Motivo: "; 
                 leerLinea(motivo, 150);
-                Cita* c = agendarCita(h, idPac, idDoc, fecha, hora, motivo);
+                agendarCita(h, idPac, idDoc, fecha, hora, motivo);
                 break;
             }
             case 2: {
@@ -1705,8 +1803,8 @@ void menuCitas(Hospital* h) {
 int main() {
     setlocale(LC_ALL, "spanish");
     
-    // Crear hospital sin datos de precarga
-    Hospital* h = crearHospital("Hospital Central", "Av. Principal #123", "0212-0000000");
+
+    Hospital* h = crearHospital("Hospital SALTO ANGEL", "Av. Secundaria #777", "0412-0000000");
 
     int opcion = -1;
     do {

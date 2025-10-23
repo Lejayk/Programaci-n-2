@@ -504,6 +504,7 @@ bool actualizarPaciente(Hospital* h, int id) {
     cout << "Dejar vacio para no cambiar.\n";
     
     cout << "Telefono actual: " << p->telefono << "\nNuevo telefono: ";
+    cin.ignore(256, '\n');
     leerLinea(buffer, 15);
     if (strlen(buffer) > 0) { 
         strncpy(p->telefono, buffer, 14); 
@@ -623,9 +624,8 @@ void listarPacientes(Hospital* h) {
         cout << "No hay pacientes registrados.\n";
         return;
     }
-    
-    cout << "\nID  Nombre                Cedula         Edad  TS   Telefono        Email                         Consultas\n";
-    cout << "-----------------------------------------------------------------------------------------------\n";
+    cout << "\nID  Nombre                Cedula         Edad  TS   Telefono        Email                         Direccion                         Consultas\n";
+    cout << "-----------------------------------------------------------------------------------------------------------------------------\n";
     for (int i=0;i<h->cantidadPacientes;i++) {
         Paciente& p = h->pacientes[i];
         char full[120]; 
@@ -636,7 +636,7 @@ void listarPacientes(Hospital* h) {
         cout << setw(3) << p.id << "  " << setw(20) << full << "  " << setw(12) << p.cedula
              << "  " << setw(4) << p.edad << "  " << setw(4) << p.tipoSangre
              << "  " << setw(14) << p.telefono << "  " << setw(28) << p.email
-             << "  " << setw(8) << p.cantidadConsultas << "\n";
+             << "  " << setw(30) << p.direccion << "  " << setw(8) << p.cantidadConsultas << "\n";
         if (p.alergias[0] != '\0') {
             cout << "     Alergias: " << p.alergias << "\n";
         }
@@ -1237,7 +1237,7 @@ void destruirHospital(Hospital*& h) {
     
     // 4. Finalmente liberar el hospital
     delete h;
-    h = nullptr;  // ¡IMPORTANTE! Establecer a nullptr
+    h = nullptr;  // ¡IMPORTANTE!!!! Demasiado importante: Establecer a nullptr (media hora de errores por no hacerlo)
     
     cout << "Hospital destruido completamente.\n";
 }

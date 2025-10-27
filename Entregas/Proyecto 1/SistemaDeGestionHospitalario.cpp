@@ -6,6 +6,12 @@
 
 using namespace std;
 
+// =====================================================
+// ESTRUCTURAS (Modelos de datos)
+// =====================================================
+// Definiciones simples que representan Pacientes, Doctores,
+// Citas y el historial médico.
+
 struct HistorialMedico {
     int idConsulta;
     char fecha[11];       
@@ -101,6 +107,12 @@ struct Hospital {
     int siguienteIdConsulta;
 };
 
+// =====================================================
+// CONSTANTES DE CONFIGURACIÓN
+// =====================================================
+// Capacidades iniciales usadas para arrays dinámicos.
+// Ajustar si se necesitan tamaños distintos.
+
 // Constantes
 const int CAP_PACIENTES_INICIAL = 10;
 const int CAP_DOCTORES_INICIAL = 10;
@@ -114,6 +126,14 @@ const int CAP_CITAS_DOCTOR_INICIAL = 10;
 
 // Implementación de funciones
 
+/*
+ * mostrarDatosHospital
+ * Muestra por consola la información principal del hospital (nombre,
+ * dirección, teléfono y conteos). No modifica el estado del hospital.
+ * Parámetros:
+ *  - h: puntero al Hospital cuyos datos se mostrarán (no nulo).
+ * Retorno: void
+ */
 void mostrarDatosHospital(Hospital* h) {
     system("pause");
     system("cls");
@@ -128,19 +148,38 @@ void mostrarDatosHospital(Hospital* h) {
     system("cls");
 }
 
+/*
+ * limpiarBufferEntrada
+ * Consume hasta 256 caracteres o hasta el fin de línea en stdin.
+ * Utilizada para limpiar el buffer después de lecturas mixtas.
+ */
 void limpiarBufferEntrada() {
     cin.ignore(256, '\n');
 }
 
+/*
+ * leerLinea
+ * Lee una línea de entrada en 'buffer' con tamaño 'size', protegiendo
+ * contra desbordamientos y reestableciendo el estado de cin en caso de
+ * error.
+ */
 void leerLinea(char* buffer, int size) {
     cin.getline(buffer, size);
-    if (cin.fail()) { 
-        cin.clear(); 
-        limpiarBufferEntrada(); 
+    if (cin.fail()) {
+        // Si hay error de lectura se limpia el estado y se descarta la línea
+        cin.clear();
+        limpiarBufferEntrada();
     }
+    // Asegurar terminador por si la entrada fue demasiado larga
     buffer[size-1] = '\0';
 }
 
+/*
+ * validarCedula
+ * Comprueba que la cadena no sea nula y tenga una longitud razonable
+ * (entre 1 y 19 caracteres). No valida formato nacional, sólo presencia
+ * y longitud para evitar entradas vacías.
+ */
 bool validarCedula(const char* cedula) {
     if (!cedula) return false;
     int len = (int)strlen(cedula);
@@ -149,66 +188,75 @@ bool validarCedula(const char* cedula) {
 }
 
 // FUNCIÓN VALIDAR EMAIL CORREGIDA
+/*
+ * validarEmail
+ * Valida de forma sencilla la estructura de un e-mail: presencia de '@',
+ * un dominio con punto y caracteres permitidos en la parte local y dominio.
+ * No pretende ser una validación perfecta (usa reglas prácticas).
+ */
 bool validarEmail(const char* email) {
     if (!email || strlen(email) == 0) return false;
-    
+
     // Longitud razonable para email
     if (strlen(email) > 50) return false;
-    
+
     const char* at = strchr(email, '@');
-    
-    // Debe tener exactamente un '@'
+
+    // Debe tener exactamente un '@' y no en los extremos
     if (!at) return false;
     if (strchr(at + 1, '@')) return false; // Más de un '@'
-    
+
     // El '@' no puede estar al inicio ni al final
     if (at == email) return false; // "@dominio.com"
     if (*(at + 1) == '\0') return false; // "usuario@"
-    
-    // Buscar punto después del '@'
+
+    // Debe existir un punto en el dominio y algo entre '@' y '.'
     const char* dot = strchr(at, '.');
     if (!dot) return false;
-    
-    // Verificar que haya algo entre '@' y '.'
     if (dot == at + 1) return false; // "usuario@.com"
-    
+
     // Verificar que haya algo después del último punto
     const char* lastDot = strrchr(email, '.');
     if (!lastDot || strlen(lastDot) <= 1) return false; // "usuario@dominio."
-    
+
     // El dominio debe tener al menos 2 caracteres después del punto
     if (strlen(lastDot) < 3) return false; // "a.b" (mínimo 2 letras en TLD)
-    
-    // Verificar caracteres válidos en la parte local (antes del @)
+
+    // Validar caracteres permitidos en parte local (usuario)
     for (const char* p = email; p < at; p++) {
         if (!isalnum(*p) && *p != '.' && *p != '_' && *p != '-' && *p != '+') {
             return false;
         }
     }
-    
+
     // Verificar que no empiece o termine con punto en la parte local
     if (email[0] == '.' || *(at - 1) == '.') return false;
-    
-    // Verificar caracteres válidos en el dominio (después del @)
+
+    // Validar caracteres permitidos en dominio (letras, dígitos, puntos y guiones)
     for (const char* p = at + 1; *p; p++) {
         if (!isalnum(*p) && *p != '.' && *p != '-') {
             return false;
         }
     }
-    
-    // Verificar que no haya dos puntos consecutivos
+
+    // No permitir ".." en ninguna parte
     for (const char* p = email; *p && *(p + 1); p++) {
         if (*p == '.' && *(p + 1) == '.') return false;
     }
-    
+
     return true;
 }
 
+/*
+ * validarFecha
+ * Valida fechas con formato "YYYY-MM-DD" y comprueba rangos básicos de
+ * mes y día (no contempla años bisiestos en esta versión simple).
+ */
 bool validarFecha(const char* fecha) {
     if (!fecha) return false;
     if (strlen(fecha) != 10) return false;
-    for (int i=0;i<10;i++) {
-        if (i==4 || i==7) {
+    for (int i = 0; i < 10; i++) {
+        if (i == 4 || i == 7) {
             if (fecha[i] != '-') return false;
         } else {
             if (fecha[i] < '0' || fecha[i] > '9') return false;
@@ -226,12 +274,16 @@ bool validarFecha(const char* fecha) {
     return true;
 }
 
+/*
+ * validarHora
+ * Comprueba formato "HH:MM" y rangos de horas y minutos.
+ */
 bool validarHora(const char* hora) {
     if (!hora) return false;
     if (strlen(hora) != 5) return false;
     if (hora[2] != ':') return false;
-    for (int i=0;i<5;i++) {
-        if (i==2) continue;
+    for (int i = 0; i < 5; i++) {
+        if (i == 2) continue;
         if (hora[i] < '0' || hora[i] > '9') return false;
     }
     int hh = (hora[0]-'0')*10 + (hora[1]-'0');
@@ -241,6 +293,12 @@ bool validarHora(const char* hora) {
     return true;
 }
 
+/*
+ * compararFechas
+ * Compara dos cadenas con formato YYYY-MM-DD usando strcmp (orden
+ * lexicográfico coincide con orden cronológico para este formato).
+ * Retorna -1 si f1 < f2, 0 si iguales, 1 si f1 > f2.
+ */
 int compararFechas(const char* f1, const char* f2) {
     int cmp = strcmp(f1, f2);
     if (cmp < 0) return -1;
@@ -248,15 +306,25 @@ int compararFechas(const char* f1, const char* f2) {
     return 0;
 }
 
+/*
+ * crearHospital
+ * Reserva y prepara una estructura Hospital con valores por defecto.
+ * Inicializa los arrays principales y los contadores.
+ * Parámetros:
+ *  - nombreHospital: nombre (cadena) del hospital.
+ *  - direccion: dirección del hospital.
+ *  - telefono: teléfono de contacto.
+ * Retorno: puntero al Hospital recién creado (heap).
+ */
 Hospital* crearHospital(const char* nombreHospital, const char* direccion, const char* telefono) {
     Hospital* h = new Hospital;
-    
-    // Inicializar TODOS los campos
-    strncpy(h->nombre, nombreHospital, sizeof(h->nombre)-1); 
+
+    // Inicializar TODOS los campos (copias seguras)
+    strncpy(h->nombre, nombreHospital, sizeof(h->nombre)-1);
     h->nombre[sizeof(h->nombre)-1] = '\0';
-    strncpy(h->direccion, direccion, sizeof(h->direccion)-1); 
+    strncpy(h->direccion, direccion, sizeof(h->direccion)-1);
     h->direccion[sizeof(h->direccion)-1] = '\0';
-    strncpy(h->telefono, telefono, sizeof(h->telefono)-1); 
+    strncpy(h->telefono, telefono, sizeof(h->telefono)-1);
     h->telefono[sizeof(h->telefono)-1] = '\0';
 
     h->capacidadPacientes = CAP_PACIENTES_INICIAL;
@@ -276,8 +344,8 @@ Hospital* crearHospital(const char* nombreHospital, const char* direccion, const
     h->doctores = new Doctor[h->capacidadDoctores];
     h->citas = new Cita[h->capacidadCitas];
 
-    // Inicializar arrays internos vacíos
-    for (int i=0;i<h->capacidadPacientes;i++) {
+    // Inicializar arrays internos vacíos (evitar punteros colgantes)
+    for (int i = 0; i < h->capacidadPacientes; i++) {
         h->pacientes[i].historial = nullptr;
         h->pacientes[i].citasAgendadas = nullptr;
         h->pacientes[i].cantidadConsultas = 0;
@@ -285,7 +353,7 @@ Hospital* crearHospital(const char* nombreHospital, const char* direccion, const
         h->pacientes[i].cantidadCitas = 0;
         h->pacientes[i].capacidadCitas = 0;
     }
-    for (int i=0;i<h->capacidadDoctores;i++) {
+    for (int i = 0; i < h->capacidadDoctores; i++) {
         h->doctores[i].pacientesAsignados = nullptr;
         h->doctores[i].citasAgendadas = nullptr;
         h->doctores[i].cantidadPacientes = 0;
@@ -298,11 +366,18 @@ Hospital* crearHospital(const char* nombreHospital, const char* direccion, const
     return h;
 }
 
+/*
+ * redimensionarArrayPacientes
+ * Duplica la capacidad del array de pacientes y copia los elementos
+ * existentes. Asegura que los nuevos slots estén inicializados.
+ */
 void redimensionarArrayPacientes(Hospital* h) {
     int nueva = h->capacidadPacientes * 2;
     Paciente* arr = new Paciente[nueva];
-    for (int i=0;i<h->cantidadPacientes;i++) arr[i] = h->pacientes[i];
-    for (int i=h->cantidadPacientes;i<nueva;i++) {
+    // Copiar pacientes existentes (preservar punteros internos)
+    for (int i = 0; i < h->cantidadPacientes; i++) arr[i] = h->pacientes[i];
+    // Inicializar el resto para evitar punteros no inicializados
+    for (int i = h->cantidadPacientes; i < nueva; i++) {
         arr[i].historial = nullptr;
         arr[i].citasAgendadas = nullptr;
         arr[i].cantidadConsultas = 0;
@@ -315,11 +390,16 @@ void redimensionarArrayPacientes(Hospital* h) {
     h->capacidadPacientes = nueva;
 }
 
+/*
+ * redimensionarArrayDoctores
+ * Duplica la capacidad del array de doctores y copia los existentes.
+ */
 void redimensionarArrayDoctores(Hospital* h) {
     int nueva = h->capacidadDoctores * 2;
     Doctor* arr = new Doctor[nueva];
-    for (int i=0;i<h->cantidadDoctores;i++) arr[i] = h->doctores[i];
-    for (int i=h->cantidadDoctores;i<nueva;i++) {
+    // Copiar doctores existentes (mantener arrays internos)
+    for (int i = 0; i < h->cantidadDoctores; i++) arr[i] = h->doctores[i];
+    for (int i = h->cantidadDoctores; i < nueva; i++) {
         arr[i].pacientesAsignados = nullptr;
         arr[i].citasAgendadas = nullptr;
         arr[i].cantidadPacientes = 0;
@@ -332,15 +412,26 @@ void redimensionarArrayDoctores(Hospital* h) {
     h->capacidadDoctores = nueva;
 }
 
+/*
+ * redimensionarArrayCitas
+ * Aumenta la capacidad del array de citas (duplicando) y copia las
+ * citas actuales.
+ */
 void redimensionarArrayCitas(Hospital* h) {
     int nueva = h->capacidadCitas * 2;
     Cita* arr = new Cita[nueva];
-    for (int i=0;i<h->cantidadCitas;i++) arr[i] = h->citas[i];
+    // Copiar citas existentes
+    for (int i = 0; i < h->cantidadCitas; i++) arr[i] = h->citas[i];
     delete[] h->citas;
     h->citas = arr;
     h->capacidadCitas = nueva;
 }
 
+/*
+ * inicializarPacienteEstructura
+ * Inicializa los arrays internos de un Paciente recién creado y marca
+ * el paciente como activo.
+ */
 void inicializarPacienteEstructura(Paciente& p) {
     p.historial = new HistorialMedico[CAP_HISTORIAL_INICIAL];
     p.cantidadConsultas = 0;
@@ -352,8 +443,16 @@ void inicializarPacienteEstructura(Paciente& p) {
     p.activo = true;
 }
 
-Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, const char* cedula, 
-                       int edad, char sexo, const char* tipoSangre, const char* telefono, 
+/*
+ * crearPaciente
+ * Crea y registra un nuevo paciente en el hospital. Realiza validaciones
+ * básicas (cédula, edad, sexo, email) y redimensiona el array si es
+ * necesario.
+ * Parámetros: muchos campos del paciente (nombre, cedula, edad, etc.).
+ * Retorno: puntero al Paciente registrado o nullptr en caso de error.
+ */
+Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, const char* cedula,
+                       int edad, char sexo, const char* tipoSangre, const char* telefono,
                        const char* direccion, const char* email, const char* alergias, const char* observaciones) {
     if (!validarCedula(cedula)) {
         cout << "Error: Cédula inválida.\n";
@@ -367,15 +466,15 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
         cout << "Error: Sexo debe ser M o F.\n";
         return nullptr;
     }
-    
+
     // Verificar cedula única
-    for (int i=0;i<h->cantidadPacientes;i++) {
+    for (int i = 0; i < h->cantidadPacientes; i++) {
         if (strcmp(h->pacientes[i].cedula, cedula) == 0) {
             cout << "Error: La cédula ya está registrada.\n";
             return nullptr;
         }
     }
-    
+
     // Validar email si se proporciona
     if (email && email[0] != '\0') {
         if (!validarEmail(email)) {
@@ -383,23 +482,23 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
             return nullptr;
         }
     }
-    
+
     if (h->cantidadPacientes >= h->capacidadPacientes) {
         redimensionarArrayPacientes(h);
     }
-    
+
     int idx = h->cantidadPacientes;
     Paciente& p = h->pacientes[idx];
     p.id = h->siguienteIdPaciente++;
-    strncpy(p.nombre, nombre, sizeof(p.nombre)-1); 
+    strncpy(p.nombre, nombre, sizeof(p.nombre)-1);
     p.nombre[sizeof(p.nombre)-1] = '\0';
-    strncpy(p.apellido, apellido, sizeof(p.apellido)-1); 
+    strncpy(p.apellido, apellido, sizeof(p.apellido)-1);
     p.apellido[sizeof(p.apellido)-1] = '\0';
-    strncpy(p.cedula, cedula, sizeof(p.cedula)-1); 
+    strncpy(p.cedula, cedula, sizeof(p.cedula)-1);
     p.cedula[sizeof(p.cedula)-1] = '\0';
     p.edad = edad;
     p.sexo = toupper(sexo);
-    
+
     // Copiar campos opcionales si se proporcionan
     if (tipoSangre && tipoSangre[0] != '\0') {
         strncpy(p.tipoSangre, tipoSangre, sizeof(p.tipoSangre)-1);
@@ -407,21 +506,21 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
     } else {
         p.tipoSangre[0] = '\0';
     }
-    
+
     if (telefono && telefono[0] != '\0') {
         strncpy(p.telefono, telefono, sizeof(p.telefono)-1);
         p.telefono[sizeof(p.telefono)-1] = '\0';
     } else {
         p.telefono[0] = '\0';
     }
-    
+
     if (direccion && direccion[0] != '\0') {
         strncpy(p.direccion, direccion, sizeof(p.direccion)-1);
         p.direccion[sizeof(p.direccion)-1] = '\0';
     } else {
         p.direccion[0] = '\0';
     }
-    
+
     if (email && email[0] != '\0') {
         strncpy(p.email, email, sizeof(p.email)-1);
         p.email[sizeof(p.email)-1] = '\0';
@@ -444,13 +543,18 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
 
     inicializarPacienteEstructura(p);
     h->cantidadPacientes++;
-    
+
     cout << "Paciente creado exitosamente. ID: " << p.id << "\n";
     return &h->pacientes[idx];
 }
 
+/*
+ * buscarPacientePorId
+ * Busca un paciente por su ID y devuelve un puntero al registro si se
+ * encuentra. Retorna nullptr si no existe.
+ */
 Paciente* buscarPacientePorId(Hospital* h, int id) {
-    for (int i=0;i<h->cantidadPacientes;i++) {
+    for (int i = 0; i < h->cantidadPacientes; i++) {
         if (h->pacientes[i].id == id) {
             return &h->pacientes[i];
         }
@@ -458,8 +562,12 @@ Paciente* buscarPacientePorId(Hospital* h, int id) {
     return nullptr;
 }
 
+/*
+ * buscarPacientePorCedula
+ * Busca un paciente por cédula (string) y devuelve puntero o nullptr.
+ */
 Paciente* buscarPacientePorCedula(Hospital* h, const char* cedula) {
-    for (int i=0;i<h->cantidadPacientes;i++) {
+    for (int i = 0; i < h->cantidadPacientes; i++) {
         if (strcmp(h->pacientes[i].cedula, cedula) == 0) {
             return &h->pacientes[i];
         }
@@ -467,9 +575,15 @@ Paciente* buscarPacientePorCedula(Hospital* h, const char* cedula) {
     return nullptr;
 }
 
+/*
+ * buscarPacientesPorNombre
+ * Busca pacientes cuyo nombre+apellido contenga la cadena 'nombre'.
+ * Devuelve un array dinámico de punteros a Paciente y actualiza 'cantidad'.
+ * El llamador es responsable de liberar el array retornado.
+ */
 Paciente** buscarPacientesPorNombre(Hospital* h, const char* nombre, int* cantidad) {
     *cantidad = 0;
-    for (int i=0;i<h->cantidadPacientes;i++) {
+    for (int i = 0; i < h->cantidadPacientes; i++) {
         char full[120];
         full[0] = '\0';
         strncat(full, h->pacientes[i].nombre, sizeof(full)-1);
@@ -480,7 +594,7 @@ Paciente** buscarPacientesPorNombre(Hospital* h, const char* nombre, int* cantid
     if (*cantidad == 0) return nullptr;
     Paciente** res = new Paciente*[*cantidad];
     int pos = 0;
-    for (int i=0;i<h->cantidadPacientes;i++) {
+    for (int i = 0; i < h->cantidadPacientes; i++) {
         char full[120]; 
         full[0] = '\0';
         strncat(full, h->pacientes[i].nombre, sizeof(full)-1);
@@ -493,36 +607,41 @@ Paciente** buscarPacientesPorNombre(Hospital* h, const char* nombre, int* cantid
     return res;
 }
 
+/*
+ * actualizarPaciente
+ * Permite actualizar campos seleccionados del paciente identificado por id.
+ * Devuelve true si la actualización se realizó correctamente.
+ */
 bool actualizarPaciente(Hospital* h, int id) {
     Paciente* p = buscarPacientePorId(h, id);
     if (!p) {
         cout << "Paciente no encontrado.\n";
         return false;
     }
-    
+
     char buffer[256];
     cout << "Dejar vacio para no cambiar.\n";
-    
+
     cout << "Telefono actual: " << p->telefono << "\nNuevo telefono: ";
     cin.ignore(256, '\n');
     leerLinea(buffer, 15);
-    if (strlen(buffer) > 0) { 
-        strncpy(p->telefono, buffer, 14); 
-        p->telefono[14] = '\0'; 
+    if (strlen(buffer) > 0) {
+        strncpy(p->telefono, buffer, 14);
+        p->telefono[14] = '\0';
     }
-    
+
     cout << "Direccion actual: " << p->direccion << "\nNueva direccion: ";
     leerLinea(buffer, 100);
-    if (strlen(buffer) > 0) { 
-        strncpy(p->direccion, buffer, 99); 
-        p->direccion[99] = '\0'; 
+    if (strlen(buffer) > 0) {
+        strncpy(p->direccion, buffer, 99);
+        p->direccion[99] = '\0';
     }
-    
+
     cout << "Email actual: " << p->email << "\nNuevo email: ";
     leerLinea(buffer, 50);
     if (strlen(buffer) > 0) {
         if (validarEmail(buffer)) {
-            strncpy(p->email, buffer, 49); 
+            strncpy(p->email, buffer, 49);
             p->email[49] = '\0';
             cout << "Email actualizado correctamente.\n";
         } else {
@@ -530,57 +649,64 @@ bool actualizarPaciente(Hospital* h, int id) {
             cout << "El email no se actualizó.\n";
         }
     }
-    
+
     cout << "Alergias actuales: " << p->alergias << "\nNuevas alergias: ";
     leerLinea(buffer, 500);
-    if (strlen(buffer) > 0) { 
-        strncpy(p->alergias, buffer, 499); 
-        p->alergias[499] = '\0'; 
+    if (strlen(buffer) > 0) {
+        strncpy(p->alergias, buffer, 499);
+        p->alergias[499] = '\0';
     }
-    
+
     cout << "Observaciones actuales: " << p->observaciones << "\nNuevas observaciones: ";
     leerLinea(buffer, 500);
-    if (strlen(buffer) > 0) { 
-        strncpy(p->observaciones, buffer, 499); 
-        p->observaciones[499] = '\0'; 
+    if (strlen(buffer) > 0) {
+        strncpy(p->observaciones, buffer, 499);
+        p->observaciones[499] = '\0';
     }
-    
+
     cout << "Paciente actualizado correctamente.\n";
     return true;
 }
 
+/*
+ * eliminarPaciente
+ * Elimina un paciente por id: cancela citas activas, elimina referencias
+ * en doctores, libera memoria interna y compacta el array.
+ */
 bool eliminarPaciente(Hospital* h, int id) {
     int idx = -1;
-    for (int i=0;i<h->cantidadPacientes;i++) {
-        if (h->pacientes[i].id == id) { 
-            idx = i; 
-            break; 
+    for (int i = 0; i < h->cantidadPacientes; i++) {
+        if (h->pacientes[i].id == id) {
+            idx = i;
+            break;
         }
     }
     if (idx == -1) {
         cout << "Paciente no encontrado.\n";
         return false;
     }
-    
+
     Paciente& p = h->pacientes[idx];
 
     // Cancelar citas asociadas y remover referencias de doctores
-    for (int i=0;i<h->cantidadCitas;i++) {
-        if (h->citas[i].idPaciente == id && strcmp(h->citas[i].estado,"Agendada")==0) {
+    for (int i = 0; i < h->cantidadCitas; i++) {
+        if (h->citas[i].idPaciente == id && strcmp(h->citas[i].estado, "Agendada") == 0) {
+            // Cancelar la cita y quitar su referencia del doctor
             strcpy(h->citas[i].estado, "Cancelada");
             h->citas[i].atendida = false;
-            // remover de doctor
+            // Buscar doctor y eliminar la referencia a esta cita (shift-left)
             Doctor* d = nullptr;
-            for (int j=0;j<h->cantidadDoctores;j++) {
-                if (h->doctores[j].id == h->citas[i].idDoctor) { 
-                    d = &h->doctores[j]; 
-                    break; 
+            for (int j = 0; j < h->cantidadDoctores; j++) {
+                if (h->doctores[j].id == h->citas[i].idDoctor) {
+                    d = &h->doctores[j];
+                    break;
                 }
             }
             if (d) {
-                for (int k=0;k<d->cantidadCitas;k++) {
+                for (int k = 0; k < d->cantidadCitas; k++) {
                     if (d->citasAgendadas[k] == h->citas[i].id) {
-                        for (int m=k;m<d->cantidadCitas-1;m++) {
+                        // Mover elementos a la izquierda para compactar
+                        for (int m = k; m < d->cantidadCitas - 1; m++) {
                             d->citasAgendadas[m] = d->citasAgendadas[m+1];
                         }
                         d->cantidadCitas--;
@@ -590,13 +716,14 @@ bool eliminarPaciente(Hospital* h, int id) {
             }
         }
     }
-    
+
     // remover de doctores asignados
-    for (int i=0;i<h->cantidadDoctores;i++) {
+    for (int i = 0; i < h->cantidadDoctores; i++) {
         Doctor& d = h->doctores[i];
-        for (int j=0;j<d.cantidadPacientes;j++) {
+        for (int j = 0; j < d.cantidadPacientes; j++) {
             if (d.pacientesAsignados[j] == id) {
-                for (int k=j;k<d.cantidadPacientes-1;k++) {
+                // Quitar id del paciente de la lista del doctor (shift-left)
+                for (int k = j; k < d.cantidadPacientes - 1; k++) {
                     d.pacientesAsignados[k] = d.pacientesAsignados[k+1];
                 }
                 d.cantidadPacientes--;
@@ -609,16 +736,21 @@ bool eliminarPaciente(Hospital* h, int id) {
     if (p.historial) delete[] p.historial;
     if (p.citasAgendadas) delete[] p.citasAgendadas;
 
-    // compactar array
-    for (int i=idx;i<h->cantidadPacientes-1;i++) {
+    // compactar array de pacientes
+    for (int i = idx; i < h->cantidadPacientes - 1; i++) {
         h->pacientes[i] = h->pacientes[i+1];
     }
     h->cantidadPacientes--;
-    
+
     cout << "Paciente eliminado correctamente.\n";
     return true;
 }
 
+/*
+ * listarPacientes
+ * Imprime en consola un listado tabulado de todos los pacientes
+ * registrados en el hospital.
+ */
 void listarPacientes(Hospital* h) {
     if (h->cantidadPacientes == 0) {
         cout << "No hay pacientes registrados.\n";
@@ -626,10 +758,10 @@ void listarPacientes(Hospital* h) {
     }
     cout << "\nID  Nombre                Cedula         Edad  TS   Telefono        Email                         Direccion                         Consultas\n";
     cout << "-----------------------------------------------------------------------------------------------------------------------------\n";
-    for (int i=0;i<h->cantidadPacientes;i++) {
+    for (int i = 0; i < h->cantidadPacientes; i++) {
         Paciente& p = h->pacientes[i];
-        char full[120]; 
-        full[0]='\0';
+        char full[120];
+        full[0] = '\0';
         strncat(full, p.nombre, sizeof(full)-1);
         strncat(full, " ", sizeof(full)-1);
         strncat(full, p.apellido, sizeof(full)-1);
@@ -646,11 +778,16 @@ void listarPacientes(Hospital* h) {
     }
 }
 
+/*
+ * agregarConsultaAlHistorial
+ * Inserta una consulta (HistorialMedico) al historial dinámico de un
+ * paciente; redimensiona el array si hace falta.
+ */
 void agregarConsultaAlHistorial(Paciente* paciente, HistorialMedico consulta) {
     if (paciente->cantidadConsultas >= paciente->capacidadHistorial) {
         int nueva = paciente->capacidadHistorial * 2;
         HistorialMedico* arr = new HistorialMedico[nueva];
-        for (int i=0;i<paciente->cantidadConsultas;i++) {
+        for (int i = 0; i < paciente->cantidadConsultas; i++) {
             arr[i] = paciente->historial[i];
         }
         delete[] paciente->historial;
@@ -660,33 +797,52 @@ void agregarConsultaAlHistorial(Paciente* paciente, HistorialMedico consulta) {
     paciente->historial[paciente->cantidadConsultas++] = consulta;
 }
 
+/*
+ * obtenerHistorialCompleto
+ * Devuelve el puntero interno al array de historial y escribe la cantidad
+ * de elementos en 'cantidad'. No crea copia; el llamador no debe liberar
+ * el puntero retornado.
+ */
 HistorialMedico* obtenerHistorialCompleto(Paciente* paciente, int* cantidad) {
     *cantidad = paciente->cantidadConsultas;
     return paciente->historial;
 }
 
+/*
+ * mostrarHistorialMedico
+ * Imprime el historial completo de un paciente formateado.
+ */
 void mostrarHistorialMedico(Paciente* paciente) {
     if (paciente->cantidadConsultas == 0) {
         cout << "No hay consultas en el historial.\n";
         return;
     }
-    
+
     cout << "\nHistorial de " << paciente->nombre << " " << paciente->apellido << " (ID " << paciente->id << ")\n";
     cout << "ID   Fecha       Hora  Doctor  Costo   Diagnostico\n";
     cout << "---------------------------------------------------------------\n";
-    for (int i=0;i<paciente->cantidadConsultas;i++) {
+    for (int i = 0; i < paciente->cantidadConsultas; i++) {
         HistorialMedico& h = paciente->historial[i];
-        cout << setw(4) << h.idConsulta << "  " << setw(10) << h.fecha << "  " << setw(5) << h.hora 
-             << "  " << setw(6) << h.idDoctor << "  " << setw(6) << fixed << setprecision(2) << h.costo 
+        cout << setw(4) << h.idConsulta << "  " << setw(10) << h.fecha << "  " << setw(5) << h.hora
+             << "  " << setw(6) << h.idDoctor << "  " << setw(6) << fixed << setprecision(2) << h.costo
              << "  " << h.diagnostico << "\n";
     }
 }
 
+/*
+ * obtenerUltimaConsulta
+ * Retorna el puntero a la última consulta del historial o nullptr si no
+ * hay consultas.
+ */
 HistorialMedico* obtenerUltimaConsulta(Paciente* paciente) {
     if (paciente->cantidadConsultas == 0) return nullptr;
     return &paciente->historial[paciente->cantidadConsultas - 1];
 }
 
+/*
+ * inicializarDoctorEstructura
+ * Reserva e inicializa arrays internos para un Doctor recién creado.
+ */
 void inicializarDoctorEstructura(Doctor& d) {
     d.pacientesAsignados = new int[CAP_PACIENTOS_DOCTOR_INICIAL];
     d.cantidadPacientes = 0;
@@ -697,6 +853,12 @@ void inicializarDoctorEstructura(Doctor& d) {
     d.disponible = true;
 }
 
+/*
+ * crearDoctor
+ * Crea y registra un doctor en el hospital realizando validaciones
+ * básicas (cédula única, años y costo). Retorna puntero al Doctor o
+ * nullptr en caso de error.
+ */
 Doctor* crearDoctor(Hospital* h, const char* nombre, const char* apellido, const char* cedula,
                    const char* especialidad, int anios, float costo) {
     if (!validarCedula(cedula)) {
@@ -711,29 +873,29 @@ Doctor* crearDoctor(Hospital* h, const char* nombre, const char* apellido, const
         cout << "Error: Costo de consulta debe ser mayor a 0.\n";
         return nullptr;
     }
-    
+
     // Verificar cedula única
-    for (int i=0;i<h->cantidadDoctores;i++) {
+    for (int i = 0; i < h->cantidadDoctores; i++) {
         if (strcmp(h->doctores[i].cedula, cedula) == 0) {
             cout << "Error: La cédula profesional ya está registrada.\n";
             return nullptr;
         }
     }
-    
+
     if (h->cantidadDoctores >= h->capacidadDoctores) {
         redimensionarArrayDoctores(h);
     }
-    
+
     int idx = h->cantidadDoctores;
     Doctor& d = h->doctores[idx];
     d.id = h->siguienteIdDoctor++;
-    strncpy(d.nombre, nombre, sizeof(d.nombre)-1); 
+    strncpy(d.nombre, nombre, sizeof(d.nombre)-1);
     d.nombre[sizeof(d.nombre)-1] = '\0';
-    strncpy(d.apellido, apellido, sizeof(d.apellido)-1); 
+    strncpy(d.apellido, apellido, sizeof(d.apellido)-1);
     d.apellido[sizeof(d.apellido)-1] = '\0';
-    strncpy(d.cedula, cedula, sizeof(d.cedula)-1); 
+    strncpy(d.cedula, cedula, sizeof(d.cedula)-1);
     d.cedula[sizeof(d.cedula)-1] = '\0';
-    strncpy(d.especialidad, especialidad, sizeof(d.especialidad)-1); 
+    strncpy(d.especialidad, especialidad, sizeof(d.especialidad)-1);
     d.especialidad[sizeof(d.especialidad)-1] = '\0';
     d.aniosExperiencia = anios;
     d.costoConsulta = costo;
@@ -742,13 +904,17 @@ Doctor* crearDoctor(Hospital* h, const char* nombre, const char* apellido, const
     d.email[0] = '\0';
     inicializarDoctorEstructura(d);
     h->cantidadDoctores++;
-    
+
     cout << "Doctor creado exitosamente. ID: " << d.id << "\n";
     return &h->doctores[idx];
 }
 
+/*
+ * buscarDoctorPorId
+ * Busca un doctor por ID y retorna puntero o nullptr.
+ */
 Doctor* buscarDoctorPorId(Hospital* h, int id) {
-    for (int i=0;i<h->cantidadDoctores;i++) {
+    for (int i = 0; i < h->cantidadDoctores; i++) {
         if (h->doctores[i].id == id) {
             return &h->doctores[i];
         }
@@ -756,8 +922,12 @@ Doctor* buscarDoctorPorId(Hospital* h, int id) {
     return nullptr;
 }
 
+/*
+ * buscarDoctorPorCedula
+ * Busca un doctor por cédula profesional.
+ */
 Doctor* buscarDoctorPorCedula(Hospital* h, const char* cedula) {
-    for (int i=0;i<h->cantidadDoctores;i++) {
+    for (int i = 0; i < h->cantidadDoctores; i++) {
         if (strcmp(h->doctores[i].cedula, cedula) == 0) {
             return &h->doctores[i];
         }
@@ -765,9 +935,14 @@ Doctor* buscarDoctorPorCedula(Hospital* h, const char* cedula) {
     return nullptr;
 }
 
+/*
+ * buscarDoctoresPorNombre
+ * Busca doctores por nombre parcial (nombre + apellido).* Retorna un
+ * array dinámico de punteros y actualiza 'cantidad'.
+ */
 Doctor** buscarDoctoresPorNombre(Hospital* h, const char* nombre, int* cantidad) {
     *cantidad = 0;
-    for (int i=0;i<h->cantidadDoctores;i++) {
+    for (int i = 0; i < h->cantidadDoctores; i++) {
         char full[120];
         full[0] = '\0';
         strncat(full, h->doctores[i].nombre, sizeof(full)-1);
@@ -778,7 +953,7 @@ Doctor** buscarDoctoresPorNombre(Hospital* h, const char* nombre, int* cantidad)
     if (*cantidad == 0) return nullptr;
     Doctor** res = new Doctor*[*cantidad];
     int pos = 0;
-    for (int i=0;i<h->cantidadDoctores;i++) {
+    for (int i = 0; i < h->cantidadDoctores; i++) {
         char full[120];
         full[0] = '\0';
         strncat(full, h->doctores[i].nombre, sizeof(full)-1);
@@ -791,15 +966,19 @@ Doctor** buscarDoctoresPorNombre(Hospital* h, const char* nombre, int* cantidad)
     return res;
 }
 
+/*
+ * buscarDoctoresPorEspecialidad
+ * Retorna los doctores con una especialidad exacta.
+ */
 Doctor** buscarDoctoresPorEspecialidad(Hospital* h, const char* especialidad, int* cantidad) {
     *cantidad = 0;
-    for (int i=0;i<h->cantidadDoctores;i++) {
+    for (int i = 0; i < h->cantidadDoctores; i++) {
         if (strcmp(h->doctores[i].especialidad, especialidad) == 0) (*cantidad)++;
     }
     if (*cantidad == 0) return nullptr;
     Doctor** res = new Doctor*[*cantidad];
     int pos = 0;
-    for (int i=0;i<h->cantidadDoctores;i++) {
+    for (int i = 0; i < h->cantidadDoctores; i++) {
         if (strcmp(h->doctores[i].especialidad, especialidad) == 0) {
             res[pos++] = &h->doctores[i];
         }
@@ -807,18 +986,23 @@ Doctor** buscarDoctoresPorEspecialidad(Hospital* h, const char* especialidad, in
     return res;
 }
 
+/*
+ * asignarPacienteADoctor
+ * Asigna el id de un paciente al array interno del doctor. Evita duplicados
+ * y redimensiona si es necesario.
+ */
 bool asignarPacienteADoctor(Doctor* d, int idPaciente) {
-    for (int i=0;i<d->cantidadPacientes;i++) {
+    for (int i = 0; i < d->cantidadPacientes; i++) {
         if (d->pacientesAsignados[i] == idPaciente) {
             cout << "El paciente ya está asignado a este doctor.\n";
             return false;
         }
     }
-    
+
     if (d->cantidadPacientes >= d->capacidadPacientes) {
         int nueva = d->capacidadPacientes * 2;
         int* arr = new int[nueva];
-        for (int i=0;i<d->cantidadPacientes;i++) {
+        for (int i = 0; i < d->cantidadPacientes; i++) {
             arr[i] = d->pacientesAsignados[i];
         }
         delete[] d->pacientesAsignados;
@@ -830,10 +1014,14 @@ bool asignarPacienteADoctor(Doctor* d, int idPaciente) {
     return true;
 }
 
+/*
+ * removerPacienteDeDoctor
+ * Elimina la referencia a un paciente del array del doctor.
+ */
 bool removerPacienteDeDoctor(Doctor* d, int idPaciente) {
-    for (int i=0;i<d->cantidadPacientes;i++) {
+    for (int i = 0; i < d->cantidadPacientes; i++) {
         if (d->pacientesAsignados[i] == idPaciente) {
-            for (int k=i;k<d->cantidadPacientes-1;k++) {
+            for (int k = i; k < d->cantidadPacientes - 1; k++) {
                 d->pacientesAsignados[k] = d->pacientesAsignados[k+1];
             }
             d->cantidadPacientes--;
@@ -845,6 +1033,10 @@ bool removerPacienteDeDoctor(Doctor* d, int idPaciente) {
     return false;
 }
 
+/*
+ * listarDoctores
+ * Muestra en consola información de todos los doctores registrados.
+ */
 void listarDoctores(Hospital* h) {
     if (h->cantidadDoctores == 0) {
         cout << "No hay doctores registrados.\n";
@@ -852,7 +1044,7 @@ void listarDoctores(Hospital* h) {
     }
     cout << "\nListado de doctores:\n";
     cout << "---------------------------------------------------------------\n";
-    for (int i=0;i<h->cantidadDoctores;i++) {
+    for (int i = 0; i < h->cantidadDoctores; i++) {
         Doctor& d = h->doctores[i];
         char full[200];
         full[0] = '\0';
@@ -870,38 +1062,43 @@ void listarDoctores(Hospital* h) {
     }
 }
 
+/*
+ * eliminarDoctor
+ * Elimina un doctor por id: cancela citas agendadas y remueve el
+ * doctor del array, liberando memoria interna.
+ */
 bool eliminarDoctor(Hospital* h, int id) {
     int idx = -1;
-    for (int i=0;i<h->cantidadDoctores;i++) {
-        if (h->doctores[i].id == id) { 
-            idx = i; 
-            break; 
+    for (int i = 0; i < h->cantidadDoctores; i++) {
+        if (h->doctores[i].id == id) {
+            idx = i;
+            break;
         }
     }
     if (idx == -1) {
         cout << "Doctor no encontrado.\n";
         return false;
     }
-    
+
     Doctor& d = h->doctores[idx];
-    
+
     // cancelar citas asociadas
-    for (int i=0;i<h->cantidadCitas;i++) {
-        if (h->citas[i].idDoctor == id && strcmp(h->citas[i].estado,"Agendada")==0) {
+    for (int i = 0; i < h->cantidadCitas; i++) {
+        if (h->citas[i].idDoctor == id && strcmp(h->citas[i].estado, "Agendada") == 0) {
             strcpy(h->citas[i].estado, "Cancelada");
             h->citas[i].atendida = false;
             // remover de paciente
             Paciente* p = nullptr;
-            for (int j=0;j<h->cantidadPacientes;j++) {
-                if (h->pacientes[j].id == h->citas[i].idPaciente) { 
-                    p = &h->pacientes[j]; 
-                    break; 
+            for (int j = 0; j < h->cantidadPacientes; j++) {
+                if (h->pacientes[j].id == h->citas[i].idPaciente) {
+                    p = &h->pacientes[j];
+                    break;
                 }
             }
             if (p) {
-                for (int k=0;k<p->cantidadCitas;k++) {
+                for (int k = 0; k < p->cantidadCitas; k++) {
                     if (p->citasAgendadas[k] == h->citas[i].id) {
-                        for (int m=k;m<p->cantidadCitas-1;m++) {
+                        for (int m = k; m < p->cantidadCitas - 1; m++) {
                             p->citasAgendadas[m] = p->citasAgendadas[m+1];
                         }
                         p->cantidadCitas--;
@@ -911,24 +1108,28 @@ bool eliminarDoctor(Hospital* h, int id) {
             }
         }
     }
-    
+
     // liberar arrays
     if (d.pacientesAsignados) delete[] d.pacientesAsignados;
     if (d.citasAgendadas) delete[] d.citasAgendadas;
-    
-    // compactar
-    for (int i=idx;i<h->cantidadDoctores-1;i++) {
+
+    // compactar array de doctores
+    for (int i = idx; i < h->cantidadDoctores - 1; i++) {
         h->doctores[i] = h->doctores[i+1];
     }
     h->cantidadDoctores--;
-    
+
     cout << "Doctor eliminado correctamente.\n";
     return true;
 }
 
+/*
+ * verificarDisponibilidad
+ * Comprueba si un doctor está libre en una fecha y hora concretas.
+ */
 bool verificarDisponibilidad(Hospital* h, int idDoctor, const char* fecha, const char* hora) {
-    for (int i=0;i<h->cantidadCitas;i++) {
-        if (h->citas[i].idDoctor == idDoctor && strcmp(h->citas[i].estado,"Agendada")==0) {
+    for (int i = 0; i < h->cantidadCitas; i++) {
+        if (h->citas[i].idDoctor == idDoctor && strcmp(h->citas[i].estado, "Agendada") == 0) {
             if (strcmp(h->citas[i].fecha, fecha) == 0 && strcmp(h->citas[i].hora, hora) == 0) {
                 return false;
             }
@@ -937,59 +1138,65 @@ bool verificarDisponibilidad(Hospital* h, int idDoctor, const char* fecha, const
     return true;
 }
 
-Cita* agendarCita(Hospital* h, int idPaciente, int idDoctor, const char* fecha, 
+/*
+ * agendarCita
+ * Agenda una nueva cita si paciente y doctor existen y la fecha/hora son
+ * válidas y libres. Añade referencias tanto en el paciente como en el
+ * doctor.
+ */
+Cita* agendarCita(Hospital* h, int idPaciente, int idDoctor, const char* fecha,
                   const char* hora, const char* motivo) {
     Paciente* p = buscarPacientePorId(h, idPaciente);
     if (!p) {
         cout << "Error: Paciente no encontrado.\n";
         return nullptr;
     }
-    
+
     Doctor* d = buscarDoctorPorId(h, idDoctor);
     if (!d) {
         cout << "Error: Doctor no encontrado.\n";
         return nullptr;
     }
-    
+
     if (!validarFecha(fecha)) {
         cout << "Error: Fecha inválida. Formato: YYYY-MM-DD\n";
         return nullptr;
     }
-    
+
     if (!validarHora(hora)) {
         cout << "Error: Hora inválida. Formato: HH:MM\n";
         return nullptr;
     }
-    
+
     if (!verificarDisponibilidad(h, idDoctor, fecha, hora)) {
         cout << "Error: El doctor no está disponible en esa fecha y hora.\n";
         return nullptr;
     }
-    
+
     if (h->cantidadCitas >= h->capacidadCitas) {
         redimensionarArrayCitas(h);
     }
-    
+
     int idx = h->cantidadCitas;
     Cita& c = h->citas[idx];
     c.id = h->siguienteIdCita++;
     c.idPaciente = idPaciente;
     c.idDoctor = idDoctor;
-    strncpy(c.fecha, fecha, 10); 
+    strncpy(c.fecha, fecha, 10);
     c.fecha[10] = '\0';
-    strncpy(c.hora, hora, 5); 
+    strncpy(c.hora, hora, 5);
     c.hora[5] = '\0';
-    strncpy(c.motivo, motivo, sizeof(c.motivo)-1); 
+    strncpy(c.motivo, motivo, sizeof(c.motivo)-1);
     c.motivo[sizeof(c.motivo)-1] = '\0';
     strcpy(c.estado, "Agendada");
     c.observaciones[0] = '\0';
     c.atendida = false;
-    
-    // agregar al paciente
+
+    // Asegurar espacio en paciente y anexar id de la cita
     if (p->cantidadCitas >= p->capacidadCitas) {
         int nueva = p->capacidadCitas * 2;
         int* arr = new int[nueva];
-        for (int i=0;i<p->cantidadCitas;i++) {
+        for (int i = 0; i < p->cantidadCitas; i++) {
             arr[i] = p->citasAgendadas[i];
         }
         delete[] p->citasAgendadas;
@@ -997,12 +1204,12 @@ Cita* agendarCita(Hospital* h, int idPaciente, int idDoctor, const char* fecha,
         p->capacidadCitas = nueva;
     }
     p->citasAgendadas[p->cantidadCitas++] = c.id;
-    
-    // agregar al doctor
+
+    // Asegurar espacio en doctor y anexar id de la cita
     if (d->cantidadCitas >= d->capacidadCitas) {
         int nueva = d->capacidadCitas * 2;
         int* arr = new int[nueva];
-        for (int i=0;i<d->cantidadCitas;i++) {
+        for (int i = 0; i < d->cantidadCitas; i++) {
             arr[i] = d->citasAgendadas[i];
         }
         delete[] d->citasAgendadas;
@@ -1010,40 +1217,46 @@ Cita* agendarCita(Hospital* h, int idPaciente, int idDoctor, const char* fecha,
         d->capacidadCitas = nueva;
     }
     d->citasAgendadas[d->cantidadCitas++] = c.id;
-    
+
     h->cantidadCitas++;
     cout << "Cita agendada exitosamente. ID: " << c.id << "\n";
     return &h->citas[idx];
 }
 
+/*
+ * cancelarCita
+ * Marca una cita como cancelada y elimina referencias en paciente y
+ * doctor.
+ */
 bool cancelarCita(Hospital* h, int idCita) {
     int idx = -1;
-    for (int i=0;i<h->cantidadCitas;i++) {
-        if (h->citas[i].id == idCita) { 
-            idx = i; 
-            break; 
+    for (int i = 0; i < h->cantidadCitas; i++) {
+        if (h->citas[i].id == idCita) {
+            idx = i;
+            break;
         }
     }
     if (idx == -1) {
         cout << "Cita no encontrada.\n";
         return false;
     }
-    
+
     Cita& c = h->citas[idx];
-    if (strcmp(c.estado,"Cancelada") == 0) {
+    if (strcmp(c.estado, "Cancelada") == 0) {
         cout << "La cita ya está cancelada.\n";
         return false;
     }
-    
+
     strcpy(c.estado, "Cancelada");
     c.atendida = false;
-    
+
     // remover de paciente
     Paciente* p = buscarPacientePorId(h, c.idPaciente);
     if (p) {
-        for (int i=0;i<p->cantidadCitas;i++) {
+        // Eliminar referencia de la cita en el paciente (compactar)
+        for (int i = 0; i < p->cantidadCitas; i++) {
             if (p->citasAgendadas[i] == idCita) {
-                for (int k=i;k<p->cantidadCitas-1;k++) {
+                for (int k = i; k < p->cantidadCitas - 1; k++) {
                     p->citasAgendadas[k] = p->citasAgendadas[k+1];
                 }
                 p->cantidadCitas--;
@@ -1051,13 +1264,13 @@ bool cancelarCita(Hospital* h, int idCita) {
             }
         }
     }
-    
+
     // remover de doctor
     Doctor* d = buscarDoctorPorId(h, c.idDoctor);
     if (d) {
-        for (int i=0;i<d->cantidadCitas;i++) {
+        for (int i = 0; i < d->cantidadCitas; i++) {
             if (d->citasAgendadas[i] == idCita) {
-                for (int k=i;k<d->cantidadCitas-1;k++) {
+                for (int k = i; k < d->cantidadCitas - 1; k++) {
                     d->citasAgendadas[k] = d->citasAgendadas[k+1];
                 }
                 d->cantidadCitas--;
@@ -1065,70 +1278,83 @@ bool cancelarCita(Hospital* h, int idCita) {
             }
         }
     }
-    
+
     cout << "Cita cancelada correctamente.\n";
     return true;
 }
 
-bool atenderCita(Hospital* h, int idCita, const char* diagnostico, 
+/*
+ * atenderCita
+ * Marca la cita como atendida, crea un registro de HistorialMedico y lo
+ * agrega al historial del paciente.
+ */
+bool atenderCita(Hospital* h, int idCita, const char* diagnostico,
                  const char* tratamiento, const char* medicamentos) {
     Cita* c = nullptr;
-    for (int i=0;i<h->cantidadCitas;i++) {
-        if (h->citas[i].id == idCita) { 
-            c = &h->citas[i]; 
-            break; 
+    for (int i = 0; i < h->cantidadCitas; i++) {
+        if (h->citas[i].id == idCita) {
+            c = &h->citas[i];
+            break;
         }
     }
     if (!c) {
         cout << "Cita no encontrada.\n";
         return false;
     }
-    
-    if (strcmp(c->estado,"Agendada") != 0) {
+
+    if (strcmp(c->estado, "Agendada") != 0) {
         cout << "Error: La cita no está en estado 'Agendada'.\n";
         return false;
     }
-    
+
+    // Marcar cita como atendida
     strcpy(c->estado, "Atendida");
     c->atendida = true;
-    
+
+    // Construir registro de HistorialMedico a partir de la cita
     HistorialMedico hm;
     hm.idConsulta = h->siguienteIdConsulta++;
-    strncpy(hm.fecha, c->fecha, 10); 
+    strncpy(hm.fecha, c->fecha, 10);
     hm.fecha[10] = '\0';
-    strncpy(hm.hora, c->hora, 5); 
+    strncpy(hm.hora, c->hora, 5);
     hm.hora[5] = '\0';
-    strncpy(hm.diagnostico, diagnostico, sizeof(hm.diagnostico)-1); 
+    strncpy(hm.diagnostico, diagnostico, sizeof(hm.diagnostico)-1);
     hm.diagnostico[sizeof(hm.diagnostico)-1] = '\0';
-    strncpy(hm.tratamiento, tratamiento, sizeof(hm.tratamiento)-1); 
+    strncpy(hm.tratamiento, tratamiento, sizeof(hm.tratamiento)-1);
     hm.tratamiento[sizeof(hm.tratamiento)-1] = '\0';
-    strncpy(hm.medicamentos, medicamentos, sizeof(hm.medicamentos)-1); 
+    strncpy(hm.medicamentos, medicamentos, sizeof(hm.medicamentos)-1);
     hm.medicamentos[sizeof(hm.medicamentos)-1] = '\0';
     hm.idDoctor = c->idDoctor;
-    
+
+    // Coste según el doctor (si existe)
     Doctor* d = buscarDoctorPorId(h, c->idDoctor);
     hm.costo = (d ? d->costoConsulta : 0.0f);
-    
+
+    // Añadir registro al historial del paciente
     Paciente* p = buscarPacientePorId(h, c->idPaciente);
     if (!p) {
         cout << "Error: Paciente no encontrado.\n";
         return false;
     }
-    
+
     agregarConsultaAlHistorial(p, hm);
     cout << "Cita atendida y agregada al historial correctamente.\n";
     return true;
 }
 
+/*
+ * obtenerCitasDePaciente
+ * Retorna un array dinámico de punteros a Cita para un paciente dado.
+ */
 Cita** obtenerCitasDePaciente(Hospital* h, int idPaciente, int* cantidad) {
     *cantidad = 0;
-    for (int i=0;i<h->cantidadCitas;i++) {
+    for (int i = 0; i < h->cantidadCitas; i++) {
         if (h->citas[i].idPaciente == idPaciente) (*cantidad)++;
     }
     if (*cantidad == 0) return nullptr;
     Cita** res = new Cita*[*cantidad];
     int pos = 0;
-    for (int i=0;i<h->cantidadCitas;i++) {
+    for (int i = 0; i < h->cantidadCitas; i++) {
         if (h->citas[i].idPaciente == idPaciente) {
             res[pos++] = &h->citas[i];
         }
@@ -1136,15 +1362,19 @@ Cita** obtenerCitasDePaciente(Hospital* h, int idPaciente, int* cantidad) {
     return res;
 }
 
+/*
+ * obtenerCitasDeDoctor
+ * Devuelve arreglo dinámico de punteros a citas de un doctor.
+ */
 Cita** obtenerCitasDeDoctor(Hospital* h, int idDoctor, int* cantidad) {
     *cantidad = 0;
-    for (int i=0;i<h->cantidadCitas;i++) {
+    for (int i = 0; i < h->cantidadCitas; i++) {
         if (h->citas[i].idDoctor == idDoctor) (*cantidad)++;
     }
     if (*cantidad == 0) return nullptr;
     Cita** res = new Cita*[*cantidad];
     int pos = 0;
-    for (int i=0;i<h->cantidadCitas;i++) {
+    for (int i = 0; i < h->cantidadCitas; i++) {
         if (h->citas[i].idDoctor == idDoctor) {
             res[pos++] = &h->citas[i];
         }
@@ -1152,15 +1382,19 @@ Cita** obtenerCitasDeDoctor(Hospital* h, int idDoctor, int* cantidad) {
     return res;
 }
 
+/*
+ * obtenerCitasPorFecha
+ * Devuelve citas que coinciden con una fecha dada.
+ */
 Cita** obtenerCitasPorFecha(Hospital* h, const char* fecha, int* cantidad) {
     *cantidad = 0;
-    for (int i=0;i<h->cantidadCitas;i++) {
+    for (int i = 0; i < h->cantidadCitas; i++) {
         if (strcmp(h->citas[i].fecha, fecha) == 0) (*cantidad)++;
     }
     if (*cantidad == 0) return nullptr;
     Cita** res = new Cita*[*cantidad];
     int pos = 0;
-    for (int i=0;i<h->cantidadCitas;i++) {
+    for (int i = 0; i < h->cantidadCitas; i++) {
         if (strcmp(h->citas[i].fecha, fecha) == 0) {
             res[pos++] = &h->citas[i];
         }
@@ -1168,15 +1402,19 @@ Cita** obtenerCitasPorFecha(Hospital* h, const char* fecha, int* cantidad) {
     return res;
 }
 
+/*
+ * listarCitasPendientes
+ * Muestra todas las citas en estado "Agendada".
+ */
 void listarCitasPendientes(Hospital* h) {
     int contador = 0;
     cout << "\nCitas pendientes:\nID  Paciente  Doctor  Fecha       Hora  Motivo\n";
     cout << "------------------------------------------------\n";
-    for (int i=0;i<h->cantidadCitas;i++) {
+    for (int i = 0; i < h->cantidadCitas; i++) {
         Cita& c = h->citas[i];
-        if (strcmp(c.estado,"Agendada")==0) {
-            cout << setw(3) << c.id << "  " << setw(8) << c.idPaciente << "  " 
-                 << setw(6) << c.idDoctor << "  " << setw(10) << c.fecha << "  " 
+        if (strcmp(c.estado, "Agendada") == 0) {
+            cout << setw(3) << c.id << "  " << setw(8) << c.idPaciente << "  "
+                 << setw(6) << c.idDoctor << "  " << setw(10) << c.fecha << "  "
                  << setw(5) << c.hora << "  " << c.motivo << "\n";
             contador++;
         }
@@ -1242,6 +1480,11 @@ void destruirHospital(Hospital*& h) {
     cout << "Hospital destruido completamente.\n";
 }
 
+/*
+ * leerEntero
+ * Lee un entero desde stdin. Si la entrada no es válida devuelve -1 y
+ * limpia el buffer para evitar bucles infinitos en menús.
+ */
 int leerEntero() {
     int x;
     if (!(cin >> x)) {
@@ -1252,6 +1495,10 @@ int leerEntero() {
     return x;
 }
 
+/*
+ * mostrarMenuPrincipal
+ * Imprime el menú principal por consola.
+ */
 void mostrarMenuPrincipal() {
     cout << "\n----------------------------------------\n";
     cout << "|   SISTEMA DE GESTION HOSPITALARIO   |\n";
@@ -1265,6 +1512,10 @@ void mostrarMenuPrincipal() {
     cout << "Elija una opcion: ";
 }
 
+/*
+ * menuOpcionesAvanzadas
+ * Menú con opciones avanzadas (actualmente: destruir hospital).
+ */
 void menuOpcionesAvanzadas(Hospital*& h) {
     int op = -1;
     system("pause");
@@ -1282,6 +1533,12 @@ void menuOpcionesAvanzadas(Hospital*& h) {
     }
 }
 
+/*
+ * menuPacientes
+ * Interfaz en consola para gestionar pacientes: CRUD, búsquedas y
+ * visualización de historiales. No modifica la estructura del hospital
+ * fuera de las operaciones explícitas (crear, actualizar, eliminar).
+ */
 void menuPacientes(Hospital* h) {
     int op = -1;
     do {
@@ -1462,6 +1719,11 @@ void menuPacientes(Hospital* h) {
     } while (op != 0);
 }
 
+/*
+ * menuDoctores
+ * Interfaz en consola para gestionar doctores: registro, búsquedas,
+ * asignación de pacientes y eliminación.
+ */
 void menuDoctores(Hospital* h) {
     int op = -1;
     do {
@@ -1669,6 +1931,11 @@ void menuDoctores(Hospital* h) {
     } while (op != 0);
 }
 
+/*
+ * menuCitas
+ * Interfaz para agendar, cancelar y atender citas, y para listar citas
+ * por paciente, doctor o fecha.
+ */
 void menuCitas(Hospital* h) {
     int op = -1;
     do {
@@ -1800,9 +2067,13 @@ void menuCitas(Hospital* h) {
     } while (op != 0);
 }
 
+/*
+ * main
+ * Punto de entrada de la aplicación. Inicializa un hospital por defecto
+ * y presenta el menú principal hasta que el usuario elija salir.
+ */
 int main() {
     setlocale(LC_ALL, "spanish");
-    
 
     Hospital* h = crearHospital("Hospital SALTO ANGEL", "Av. Secundaria #777", "0412-0000000");
 
@@ -1820,31 +2091,31 @@ int main() {
             }
             continue;
         }
-        
+
         mostrarMenuPrincipal();
         opcion = leerEntero();
-        
+
         switch(opcion) {
-            case 1: 
-                menuPacientes(h); 
+            case 1:
+                menuPacientes(h);
                 break;
-            case 2: 
-                menuDoctores(h); 
+            case 2:
+                menuDoctores(h);
                 break;
-            case 3: 
-                menuCitas(h); 
+            case 3:
+                menuCitas(h);
                 break;
-            case 4: 
-                mostrarDatosHospital(h); 
+            case 4:
+                mostrarDatosHospital(h);
                 break;
-            case 5: 
-                menuOpcionesAvanzadas(h); 
+            case 5:
+                menuOpcionesAvanzadas(h);
                 break;
-            case 0: 
-                cout << "Saliendo...\n"; 
+            case 0:
+                cout << "Saliendo...\n";
                 break;
-            default: 
-                cout << "Opcion invalida.\n"; 
+            default:
+                cout << "Opcion invalida.\n";
                 break;
         }
     } while (opcion != 0);
@@ -1853,6 +2124,6 @@ int main() {
     if (h) {
         destruirHospital(h);
     }
-    
+
     return 0;
 }

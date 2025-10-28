@@ -184,6 +184,12 @@ bool validarCedula(const char* cedula) {
     if (!cedula) return false;
     int len = (int)strlen(cedula);
     if (len == 0 || len > 19) return false;
+       // Debe comenzar con 'V' o 'E' y un guion
+    if (cedula[1] != '-') return false;
+    // Verificar que después del guion todo sean dígitos
+    for (int i = 2; i < len; i++) {
+        if (!isdigit(cedula[i])) return false;
+    }
     return true;
 }
 
@@ -455,7 +461,7 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
                        int edad, char sexo, const char* tipoSangre, const char* telefono,
                        const char* direccion, const char* email, const char* alergias, const char* observaciones) {
     if (!validarCedula(cedula)) {
-        cout << "Error: Cédula inválida.\n";
+        cout << "Error: Cedula invalida.\n";
         return nullptr;
     }
     if (edad < 0 || edad > 120) {
@@ -466,6 +472,7 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
         cout << "Error: Sexo debe ser M o F.\n";
         return nullptr;
     }
+    //Sí, de momento no es inclusivo. Tendría que meter todo el abecedario.
 
     // Verificar cedula única
     for (int i = 0; i < h->cantidadPacientes; i++) {

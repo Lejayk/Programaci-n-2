@@ -190,6 +190,7 @@ bool validarCedula(const char* cedula) {
     for (int i = 2; i < len; i++) {
         if (!isdigit(cedula[i])) return false;
     }
+    if (cedula[0] != 'V' && cedula[0] != 'v') return false;
     return true;
 }
 
@@ -477,7 +478,7 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
     // Verificar cedula única
     for (int i = 0; i < h->cantidadPacientes; i++) {
         if (strcmp(h->pacientes[i].cedula, cedula) == 0) {
-            cout << "Error: La cédula ya está registrada.\n";
+            cout << "Error: La cedula ya esta registrada.\n";
             return nullptr;
         }
     }
@@ -869,11 +870,11 @@ void inicializarDoctorEstructura(Doctor& d) {
 Doctor* crearDoctor(Hospital* h, const char* nombre, const char* apellido, const char* cedula,
                    const char* especialidad, int anios, float costo) {
     if (!validarCedula(cedula)) {
-        cout << "Error: Cédula profesional inválida.\n";
+        cout << "Error: Cedula profesional invelida.\n";
         return nullptr;
     }
     if (anios < 0) {
-        cout << "Error: Años de experiencia no pueden ser negativos.\n";
+        cout << "Error: Anios de experiencia no pueden ser negativos.\n";
         return nullptr;
     }
     if (costo <= 0.0f) {
@@ -1579,7 +1580,7 @@ void menuPacientes(Hospital* h) {
                 leerLinea(nombre, 50);
                 cout << "Apellido: "; 
                 leerLinea(apellido, 50);
-                cout << "Cedula: "; 
+                cout << "Cedula: (Formato a usar V-12345678)\n"; 
                 leerLinea(cedula, 20);
                 cout << "Edad: "; 
                 edad = leerEntero();

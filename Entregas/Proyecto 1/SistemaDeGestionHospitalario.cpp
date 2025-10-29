@@ -15,7 +15,7 @@ using namespace std;
 struct HistorialMedico {
     int idConsulta;
     char fecha[11];       
-    char hora[6];        
+    char hora[6];       
     char diagnostico[200];
     char tratamiento[200];
     char medicamentos[150];
@@ -236,7 +236,7 @@ bool validarEmail(const char* email) {
         }
     }
 
-    // Verificar que no empiece o termine con punto en la parte local
+    // Verificar que no empiece o termine con punto en la pa  rte local
     if (email[0] == '.' || *(at - 1) == '.') return false;
 
     // Validar caracteres permitidos en dominio (letras, dígitos, puntos y guiones)
@@ -246,7 +246,7 @@ bool validarEmail(const char* email) {
         }
     }
 
-    // No permitir ".." en ninguna parte
+    // No permitir doble punto: ".." en ninguna parte
     for (const char* p = email; *p && *(p + 1); p++) {
         if (*p == '.' && *(p + 1) == '.') return false;
     }
@@ -326,7 +326,7 @@ int compararFechas(const char* f1, const char* f2) {
 Hospital* crearHospital(const char* nombreHospital, const char* direccion, const char* telefono) {
     Hospital* h = new Hospital;
 
-    // Inicializar TODOS los campos (copias seguras)
+    // Inicializar TODOS los campos (copias seguras dandi lugar al espacio nulo)
     strncpy(h->nombre, nombreHospital, sizeof(h->nombre)-1);
     h->nombre[sizeof(h->nombre)-1] = '\0';
     strncpy(h->direccion, direccion, sizeof(h->direccion)-1);
@@ -1538,6 +1538,8 @@ void menuOpcionesAvanzadas(Hospital*& h) {
         cout << "Hospital destruido exitosamente.\n";
     } else if (op != 0) {
         cout << "Opcion invalida.\n";
+        system("pause");
+        system("cls");
     }
 }
 
@@ -1580,12 +1582,12 @@ void menuPacientes(Hospital* h) {
                 leerLinea(nombre, 50);
                 cout << "Apellido: "; 
                 leerLinea(apellido, 50);
-                cout << "Cedula: (Formato a usar V-12345678)\n"; 
+                cout << "Cedula: (Formato a usar V-00000000)\n"; 
                 leerLinea(cedula, 20);
                 cout << "Edad: "; 
                 edad = leerEntero();
                 if (edad == -1) {
-                    cout << "Edad inválida.\n";
+                    cout << "Edad invalida.\n";
                     break;
                 }
                 cout << "Sexo (M/F): "; 
@@ -1640,12 +1642,12 @@ void menuPacientes(Hospital* h) {
                 int cnt; 
                 Paciente** res = buscarPacientesPorNombre(h, nombre, &cnt);
                 if (!res) {
-                    cout << "No se encontraron pacientes.\n";
+                    cout << "No se encontraron pacientes con ese nombre.\n";
                 } else {
                     cout << "Resultados:\n";
                     for (int i=0;i<cnt;i++) {
                         Paciente* p = res[i];
-                        cout << p->id << " - " << p->nombre << " " << p->apellido << "\n";
+                        cout << "ID: " << p->id << " - " << p->nombre << " " << p->apellido << "\n";
                         cout << "  Cedula: " << p->cedula << "  Edad: " << p->edad << "  Sexo: " << p->sexo << "\n";
                         cout << "  Telefono: " << p->telefono << "\n";
                         cout << "  Direccion: " << p->direccion << "\n";
@@ -1721,6 +1723,8 @@ void menuPacientes(Hospital* h) {
             }
             default: {
                 cout << "Opcion invalida.\n";
+                    system("pause");
+                    system("cls");
                 break;
             }
         }
@@ -2124,6 +2128,8 @@ int main() {
                 break;
             default:
                 cout << "Opcion invalida.\n";
+                        system("pause");
+                        system("cls");
                 break;
         }
     } while (opcion != 0);

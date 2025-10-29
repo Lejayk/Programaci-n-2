@@ -3,6 +3,7 @@
 #include <ctime>
 #include <iomanip>
 #include <cctype>
+#include <string>
 
 using namespace std;
 
@@ -466,7 +467,7 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
         return nullptr;
     }
     if (edad < 0 || edad > 120) {
-        cout << "Error: Edad debe estar entre 0 y 120 años.\n";
+        cout << "Error: Edad debe estar entre 0 y 120 anios.\n";
         return nullptr;
     }
     if (!(sexo=='M' || sexo == 'm' || sexo=='f' || sexo=='F')) {
@@ -486,7 +487,7 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
     // Validar email si se proporciona
     if (email && email[0] != '\0') {
         if (!validarEmail(email)) {
-            cout << "Error: Email inválido. Formato esperado: usuario@dominio.ext\n";
+            cout << "Error: Email invalido. Formato esperado: usuario@dominio.ext\n";
             return nullptr;
         }
     }
@@ -653,8 +654,8 @@ bool actualizarPaciente(Hospital* h, int id) {
             p->email[49] = '\0';
             cout << "Email actualizado correctamente.\n";
         } else {
-            cout << "Error: Email inválido. Formato esperado: usuario@dominio.ext\n";
-            cout << "El email no se actualizó.\n";
+            cout << "Error: Email invalido. Formato esperado: usuario@dominio.ext\n";
+            cout << "El email no se actualizo.\n";
         }
     }
 
@@ -761,11 +762,13 @@ bool eliminarPaciente(Hospital* h, int id) {
  */
 void listarPacientes(Hospital* h) {
     if (h->cantidadPacientes == 0) {
-        cout << "No hay pacientes registrados.\n";
+        cout << "No hay pacientes registrados." << "\n";
         return;
     }
-    cout << "\nID  Nombre                Cedula         Edad  TS   Telefono        Email                         Direccion                         Consultas\n";
-    cout << "-----------------------------------------------------------------------------------------------------------------------------\n";
+    // Cabecera tabular (alineado a la izquierda)
+    cout << "\n" << left << setw(4) << "ID" << setw(26) << "NOMBRE" << setw(16) << "CEDULA" << setw(6) << "EDAD"
+         << setw(6) << "TS" << setw(16) << "TELEFONO" << setw(30) << "EMAIL" << setw(34) << "DIRECCION" << setw(10) << "CONSULTAS" << "\n";
+    cout << string(150, '-') << endl;
     for (int i = 0; i < h->cantidadPacientes; i++) {
         Paciente& p = h->pacientes[i];
         char full[120];
@@ -773,15 +776,20 @@ void listarPacientes(Hospital* h) {
         strncat(full, p.nombre, sizeof(full)-1);
         strncat(full, " ", sizeof(full)-1);
         strncat(full, p.apellido, sizeof(full)-1);
-        cout << setw(3) << p.id << "  " << setw(20) << full << "  " << setw(12) << p.cedula
-             << "  " << setw(4) << p.edad << "  " << setw(4) << p.tipoSangre
-             << "  " << setw(14) << p.telefono << "  " << setw(28) << p.email
-             << "  " << setw(30) << p.direccion << "  " << setw(8) << p.cantidadConsultas << "\n";
+        cout << left << setw(4) << p.id
+             << setw(26) << full
+             << setw(16) << p.cedula
+             << setw(6) << p.edad
+             << setw(6) << p.tipoSangre
+             << setw(16) << p.telefono
+             << setw(30) << p.email
+             << setw(34) << p.direccion
+             << setw(10) << p.cantidadConsultas << "\n";
         if (p.alergias[0] != '\0') {
-            cout << "     Alergias: " << p.alergias << "\n";
+            cout << "    " << left << setw(12) << "Alergias:" << p.alergias << "\n";
         }
         if (p.observaciones[0] != '\0') {
-            cout << "     Observaciones: " << p.observaciones << "\n";
+            cout << "    " << left << setw(12) << "Observa:" << p.observaciones << "\n";
         }
     }
 }
@@ -827,12 +835,16 @@ void mostrarHistorialMedico(Paciente* paciente) {
     }
 
     cout << "\nHistorial de " << paciente->nombre << " " << paciente->apellido << " (ID " << paciente->id << ")\n";
-    cout << "ID   Fecha       Hora  Doctor  Costo   Diagnostico\n";
-    cout << "---------------------------------------------------------------\n";
+    cout << left << setw(6) << "ID" << setw(12) << "FECHA" << setw(6) << "HORA" << setw(8) << "DOCTOR"
+         << setw(8) << "COSTO" << "  " << "DIAGNOSTICO" << "\n";
+    cout << string(100, '-') << endl;
     for (int i = 0; i < paciente->cantidadConsultas; i++) {
         HistorialMedico& h = paciente->historial[i];
-        cout << setw(4) << h.idConsulta << "  " << setw(10) << h.fecha << "  " << setw(5) << h.hora
-             << "  " << setw(6) << h.idDoctor << "  " << setw(6) << fixed << setprecision(2) << h.costo
+        cout << left << setw(6) << h.idConsulta
+             << setw(12) << h.fecha
+             << setw(6) << h.hora
+             << setw(8) << h.idDoctor
+             << setw(8) << fixed << setprecision(2) << h.costo
              << "  " << h.diagnostico << "\n";
     }
 }
@@ -870,7 +882,7 @@ void inicializarDoctorEstructura(Doctor& d) {
 Doctor* crearDoctor(Hospital* h, const char* nombre, const char* apellido, const char* cedula,
                    const char* especialidad, int anios, float costo) {
     if (!validarCedula(cedula)) {
-        cout << "Error: Cedula profesional invelida.\n";
+        cout << "Error: Cedula profesional invalida.\n";
         return nullptr;
     }
     if (anios < 0) {
@@ -885,7 +897,7 @@ Doctor* crearDoctor(Hospital* h, const char* nombre, const char* apellido, const
     // Verificar cedula única
     for (int i = 0; i < h->cantidadDoctores; i++) {
         if (strcmp(h->doctores[i].cedula, cedula) == 0) {
-            cout << "Error: La cédula profesional ya está registrada.\n";
+            cout << "Error: La cedula profesional ya esta registrada.\n";
             return nullptr;
         }
     }
@@ -1002,7 +1014,7 @@ Doctor** buscarDoctoresPorEspecialidad(Hospital* h, const char* especialidad, in
 bool asignarPacienteADoctor(Doctor* d, int idPaciente) {
     for (int i = 0; i < d->cantidadPacientes; i++) {
         if (d->pacientesAsignados[i] == idPaciente) {
-            cout << "El paciente ya está asignado a este doctor.\n";
+            cout << "El paciente ya esta asignado a este doctor.\n";
             return false;
         }
     }
@@ -1050,8 +1062,12 @@ void listarDoctores(Hospital* h) {
         cout << "No hay doctores registrados.\n";
         return;
     }
-    cout << "\nListado de doctores:\n";
-    cout << "---------------------------------------------------------------\n";
+    // Cabecera tabular (alineado a la izquierda)
+    cout << "\n" << left << setw(4) << "ID" << setw(26) << "NOMBRE" << setw(16) << "CEDULA"
+         << setw(20) << "ESPECIALIDAD" << setw(6) << "ANIOS" << setw(8) << "COSTO"
+         << setw(16) << "TELEFONO" << setw(30) << "EMAIL" << setw(20) << "HORARIO"
+         << setw(6) << "PACS" << setw(6) << "CITAS" << setw(8) << "DISP" << "\n";
+    cout << string(150, '-') << endl;
     for (int i = 0; i < h->cantidadDoctores; i++) {
         Doctor& d = h->doctores[i];
         char full[200];
@@ -1059,14 +1075,19 @@ void listarDoctores(Hospital* h) {
         strncat(full, d.nombre, sizeof(full)-1);
         strncat(full, " ", sizeof(full)-1);
         strncat(full, d.apellido, sizeof(full)-1);
-        cout << "ID: " << d.id << " - " << full << "\n";
-        cout << "  Cedula: " << d.cedula << "  Especialidad: " << d.especialidad << "\n";
-        cout << "  Anios experiencia: " << d.aniosExperiencia << "  Costo: " << fixed << setprecision(2) << d.costoConsulta << "\n";
-        if (d.telefono[0] != '\0') cout << "  Telefono: " << d.telefono << "\n";
-        if (d.email[0] != '\0') cout << "  Email: " << d.email << "\n";
-        if (d.horarioAtencion[0] != '\0') cout << "  Horario: " << d.horarioAtencion << "\n";
-        cout << "  Pacientes asignados: " << d.cantidadPacientes << "  Citas agendadas: " << d.cantidadCitas << "  Disponible: " << (d.disponible ? "Si" : "No") << "\n";
-        cout << "---------------------------------------------------------------\n";
+        cout << left << setw(4) << d.id
+             << setw(26) << full
+             << setw(16) << d.cedula
+             << setw(20) << d.especialidad
+             << setw(6) << d.aniosExperiencia
+             << setw(8) << fixed << setprecision(2) << d.costoConsulta
+             << setw(16) << d.telefono
+             << setw(30) << d.email
+             << setw(20) << d.horarioAtencion
+             << setw(6) << d.cantidadPacientes
+             << setw(6) << d.cantidadCitas
+             << setw(8) << (d.disponible ? "Si" : "No") << "\n";
+        cout << string(150, '-') << endl;
     }
 }
 
@@ -1167,17 +1188,17 @@ Cita* agendarCita(Hospital* h, int idPaciente, int idDoctor, const char* fecha,
     }
 
     if (!validarFecha(fecha)) {
-        cout << "Error: Fecha inválida. Formato: YYYY-MM-DD\n";
+        cout << "Error: Fecha invalida. Formato: YYYY-MM-DD\n";
         return nullptr;
     }
 
     if (!validarHora(hora)) {
-        cout << "Error: Hora inválida. Formato: HH:MM\n";
+        cout << "Error: Hora invalida. Formato: HH:MM\n";
         return nullptr;
     }
 
     if (!verificarDisponibilidad(h, idDoctor, fecha, hora)) {
-        cout << "Error: El doctor no está disponible en esa fecha y hora.\n";
+        cout << "Error: El doctor no esta disponible en esa fecha y hora.\n";
         return nullptr;
     }
 
@@ -1251,7 +1272,7 @@ bool cancelarCita(Hospital* h, int idCita) {
 
     Cita& c = h->citas[idx];
     if (strcmp(c.estado, "Cancelada") == 0) {
-        cout << "La cita ya está cancelada.\n";
+        cout << "La cita ya esta cancelada.\n";
         return false;
     }
 
@@ -1311,7 +1332,7 @@ bool atenderCita(Hospital* h, int idCita, const char* diagnostico,
     }
 
     if (strcmp(c->estado, "Agendada") != 0) {
-        cout << "Error: La cita no está en estado 'Agendada'.\n";
+        cout << "Error: La cita no esta en estado 'Agendada'.\n";
         return false;
     }
 
@@ -1416,14 +1437,18 @@ Cita** obtenerCitasPorFecha(Hospital* h, const char* fecha, int* cantidad) {
  */
 void listarCitasPendientes(Hospital* h) {
     int contador = 0;
-    cout << "\nCitas pendientes:\nID  Paciente  Doctor  Fecha       Hora  Motivo\n";
-    cout << "------------------------------------------------\n";
+    cout << "\nCitas pendientes:\n";
+    cout << left << setw(4) << "ID" << setw(10) << "PACIENTE" << setw(8) << "DOCTOR" << setw(12) << "FECHA" << setw(6) << "HORA" << setw(40) << "MOTIVO" << "\n";
+    cout << string(120, '-') << endl;
     for (int i = 0; i < h->cantidadCitas; i++) {
         Cita& c = h->citas[i];
         if (strcmp(c.estado, "Agendada") == 0) {
-            cout << setw(3) << c.id << "  " << setw(8) << c.idPaciente << "  "
-                 << setw(6) << c.idDoctor << "  " << setw(10) << c.fecha << "  "
-                 << setw(5) << c.hora << "  " << c.motivo << "\n";
+            cout << left << setw(4) << c.id
+                 << setw(10) << c.idPaciente
+                 << setw(8) << c.idDoctor
+                 << setw(12) << c.fecha
+                 << setw(6) << c.hora
+                 << setw(40) << c.motivo << "\n";
             contador++;
         }
     }
@@ -1777,7 +1802,7 @@ void menuDoctores(Hospital* h) {
                 cout << "Anios experiencia: "; 
                 anios = leerEntero();
                 if (anios == -1) {
-                    cout << "Años de experiencia inválidos.\n";
+                    cout << "Anios de experiencia invalidos.\n";
                     break;
                 }
                 cout << "Costo consulta: "; 
@@ -2093,10 +2118,10 @@ int main() {
     do {
         // Verificar si el hospital existe
         if (!h) {
-            cout << "\nEl hospital ha sido destruido. ¿Desea crear uno nuevo? (1: Sí, 0: Salir): ";
+            cout << "\nEl hospital ha sido destruido. Desea crear uno nuevo? (1: Si, 0: Salir): ";
             int respuesta = leerEntero();
             if (respuesta == 1) {
-                h = crearHospital("Hospital Renacido", "Nueva Dirección", "0212-1111111");
+                h = crearHospital("Hospital Renacido", "Nueva Direccion", "0212-1111111");
                 cout << "Nuevo hospital creado.\n";
             } else {
                 opcion = 0;

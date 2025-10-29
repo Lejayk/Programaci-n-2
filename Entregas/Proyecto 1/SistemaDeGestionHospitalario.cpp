@@ -768,7 +768,7 @@ void listarPacientes(Hospital* h) {
     // Cabecera tabular (alineado a la izquierda)
     cout << "\n" << left << setw(4) << "ID" << setw(26) << "NOMBRE" << setw(16) << "CEDULA" << setw(6) << "EDAD"
          << setw(6) << "TS" << setw(16) << "TELEFONO" << setw(30) << "EMAIL" << setw(34) << "DIRECCION" << setw(10) << "CONSULTAS" << "\n";
-    cout << string(150, '-') << endl;
+    cout << string(150, '_') << endl;
     for (int i = 0; i < h->cantidadPacientes; i++) {
         Paciente& p = h->pacientes[i];
         char full[120];

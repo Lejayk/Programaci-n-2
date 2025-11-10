@@ -135,7 +135,7 @@ struct Paciente;
 Paciente leerPacientePorIndice(int indice);
 Paciente buscarPacientePorID(int id);
 Paciente buscarPacientePorCedula(const char* cedula);
-bool guardarPaciente(Paciente paciente);
+bool guardarPaciente(Paciente &paciente);
 void limpiarBufferEntrada();
 void leerLinea(char* buffer, int size);
 bool validarEmail(const char* email);
@@ -213,6 +213,12 @@ bool actualizarPaciente(Hospital* h, int id) {
         strncpy(p.tipoSangre, buffer, sizeof(p.tipoSangre)-1);
         p.tipoSangre[sizeof(p.tipoSangre)-1] = '\0';
     }
+    cout << "Sexo registrado: " << p.sexo << "\nSexo a registrar (M/F): ";
+   leerLinea(buffer, 2);
+    if (strlen(buffer) > 0) {
+        p.sexo = toupper(buffer[0]); // Asegurar que sea mayúscula
+    }
+
     cout << "Telefono actual: " << p.telefono << "\nNuevo telefono: ";
     leerLinea(buffer, 15);
     if (strlen(buffer) > 0) {
@@ -270,40 +276,67 @@ bool actualizarPaciente(Hospital* h, int id) {
 // BÚSQUEDA POR NOMBRE (SISTEMA ARCHIVOS)
 // =====================================================
 
-Paciente** buscarPacientesPorNombre(const char* nombre, int* cantidad) {
+// =====================================================
+// FUNCIONES AUXILIARES PARA BÚSQUEDA
+// =====================================================
+
+bool contieneCadena(const char* texto, const char* busqueda) {
+    if (!texto || !busqueda || busqueda[0] == '\0') return false;
+    
+    char textoLower[256];
+    char busquedaLower[256];
+    
+    // Convertir a minúsculas
+    int i;
+    for (i = 0; texto[i] && i < 255; i++) {
+        textoLower[i] = tolower(texto[i]);
+    }
+    textoLower[i] = '\0';
+    
+    for (i = 0; busqueda[i] && i < 255; i++) {
+        busquedaLower[i] = tolower(busqueda[i]);
+    }
+    busquedaLower[i] = '\0';
+    
+    return strstr(textoLower, busquedaLower) != nullptr;
+}
+
+Paciente** buscarPacientesPorNombre(const char* nombreBuscado, int* cantidad) {
     ArchivoHeader header = leerHeader("DATA/pacientes.bin");
     *cantidad = 0;
     
-    // Primero contar cuántos coinciden
-    for (int i = 0; i < header.cantidadRegistros; i++) {
+    const int MAX_RESULTADOS = 1000;
+    Paciente* resultadosTemp[MAX_RESULTADOS];
+    int contador = 0;
+    
+    for (int i = 0; i < header.cantidadRegistros && contador < MAX_RESULTADOS; i++) {
         Paciente p = leerPacientePorIndice(i);
-        if (!p.eliminado) {
-            char full[120];
-            snprintf(full, sizeof(full), "%s %s", p.nombre, p.apellido);
-            if (strstr(full, nombre) != nullptr) {
-                (*cantidad)++;
+        if (!p.eliminado && p.activo) {
+            // Buscar en nombre completo, nombre solo y apellido solo
+            bool coincide = contieneCadena(p.nombre, nombreBuscado) ||
+                           contieneCadena(p.apellido, nombreBuscado);
+            
+            // Si no coincide, intentar con nombre + apellido
+            if (!coincide) {
+                char nombreCompleto[120];
+                snprintf(nombreCompleto, sizeof(nombreCompleto), "%s %s", p.nombre, p.apellido);
+                coincide = contieneCadena(nombreCompleto, nombreBuscado);
+            }
+            
+            if (coincide) {
+                resultadosTemp[contador] = new Paciente;
+                *resultadosTemp[contador] = p;
+                contador++;
             }
         }
     }
     
-    if (*cantidad == 0) return nullptr;
+    if (contador == 0) return nullptr;
     
-    // Crear array de resultados
-    Paciente** resultados = new Paciente*[*cantidad];
-    int pos = 0;
-    
-    // Llenar el array
-    for (int i = 0; i < header.cantidadRegistros; i++) {
-        Paciente p = leerPacientePorIndice(i);
-        if (!p.eliminado) {
-            char full[120];
-            snprintf(full, sizeof(full), "%s %s", p.nombre, p.apellido);
-            if (strstr(full, nombre) != nullptr) {
-                resultados[pos] = new Paciente;
-                *resultados[pos] = p;
-                pos++;
-            }
-        }
+    *cantidad = contador;
+    Paciente** resultados = new Paciente*[contador];
+    for (int i = 0; i < contador; i++) {
+        resultados[i] = resultadosTemp[i];
     }
     
     return resultados;
@@ -444,7 +477,7 @@ Paciente buscarPacientePorCedula(const char* cedula) {
     return noEncontrado;
 }
 
-bool guardarPaciente(Paciente paciente) {
+bool guardarPaciente(Paciente &paciente) {
     fstream archivo("DATA/pacientes.bin", ios::binary | ios::in | ios::out);
     if (!archivo.is_open()) return false;
     
@@ -464,7 +497,7 @@ bool guardarPaciente(Paciente paciente) {
     
     if (esNuevo) {
         // Nuevo paciente
-        paciente.id = header.proximoID++;
+        paciente.id = header.proximoID++;//<-- actualiza la variable original llamada proximoID
         paciente.fechaCreacion = time(0);
         paciente.eliminado = false;
         header.cantidadRegistros++;
@@ -543,7 +576,7 @@ Doctor buscarDoctorPorID(int id) {
     return noEncontrado;
 }
 
-bool guardarDoctor(Doctor doctor) {
+bool guardarDoctor(Doctor &doctor) {
     fstream archivo("DATA/doctores.bin", ios::binary | ios::in | ios::out);
     if (!archivo.is_open()) return false;
     
@@ -762,7 +795,6 @@ Paciente* crearPaciente(Hospital* h, const char* nombre, const char* apellido, c
     nuevoPaciente.cantidadCitas = 0;
     
     if (guardarPaciente(nuevoPaciente)) {
-        h->siguienteIDPaciente++;
         h->totalPacientesRegistrados++;
         guardarDatosHospital(h);
         
@@ -809,7 +841,6 @@ Doctor* crearDoctor(Hospital* h, const char* nombre, const char* apellido, const
     nuevoDoctor.cantidadCitas = 0;
     
     if (guardarDoctor(nuevoDoctor)) {
-        h->siguienteIDDoctor++;
         h->totalDoctoresRegistrados++;
         guardarDatosHospital(h);
         

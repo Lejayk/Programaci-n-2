@@ -130,6 +130,21 @@ const int VERSION_ARCHIVO = 1;
 // FUNCIONES DE MANEJO DE ARCHIVOS
 // =====================================================
 
+// Forward declarations (funciones definidas mas abajo pero usadas antes)
+struct Paciente;
+Paciente leerPacientePorIndice(int indice);
+Paciente buscarPacientePorID(int id);
+Paciente buscarPacientePorCedula(const char* cedula);
+bool guardarPaciente(Paciente paciente);
+void limpiarBufferEntrada();
+void leerLinea(char* buffer, int size);
+bool validarEmail(const char* email);
+int leerEntero();
+Paciente* crearPaciente(struct Hospital* h, const char* nombre, const char* apellido, const char* cedula,
+                       int edad, char sexo, const char* tipoSangre, const char* telefono,
+                       const char* direccion, const char* email, const char* alergias, const char* observaciones);
+
+
 bool crearDirectorioData() {
     #ifdef _WIN32
         return system("mkdir DATA 2>nul") == 0;
@@ -178,7 +193,121 @@ bool actualizarHeader(const char* nombreArchivo, ArchivoHeader nuevoHeader) {
 // =====================================================
 // SISTEMA DE ARCHIVOS ESPECÍFICOS
 // =====================================================
+// =====================================================
+// FUNCIÓN ACTUALIZAR PACIENTE (SISTEMA ARCHIVOS)
+// =====================================================
 
+bool actualizarPaciente(Hospital* h, int id) {
+    Paciente p = buscarPacientePorID(id);
+    if (p.id == -1) {
+        cout << "Paciente no encontrado.\n";
+        return false;
+    }
+
+    char buffer[256];
+    cout << "Dejar vacio para no cambiar.\n";
+    cout << "Tipo de sangre registrado: " << p.tipoSangre << "\nTipo de sangre a registrar: ";
+    limpiarBufferEntrada();
+    leerLinea(buffer, 5);
+    if (strlen(buffer) > 0) {
+        strncpy(p.tipoSangre, buffer, sizeof(p.tipoSangre)-1);
+        p.tipoSangre[sizeof(p.tipoSangre)-1] = '\0';
+    }
+    cout << "Telefono actual: " << p.telefono << "\nNuevo telefono: ";
+    leerLinea(buffer, 15);
+    if (strlen(buffer) > 0) {
+        strncpy(p.telefono, buffer, sizeof(p.telefono)-1);
+        p.telefono[sizeof(p.telefono)-1] = '\0';
+    }
+
+    cout << "Direccion actual: " << p.direccion << "\nNueva direccion: ";
+    leerLinea(buffer, 100);
+    if (strlen(buffer) > 0) {
+        strncpy(p.direccion, buffer, sizeof(p.direccion)-1);
+        p.direccion[sizeof(p.direccion)-1] = '\0';
+    }
+
+    cout << "Email actual: " << p.email << "\nNuevo email: ";
+    leerLinea(buffer, 50);
+    if (strlen(buffer) > 0) {
+        if (validarEmail(buffer)) {
+            strncpy(p.email, buffer, sizeof(p.email)-1);
+            p.email[sizeof(p.email)-1] = '\0';
+            cout << "Email actualizado correctamente.\n";
+        } else {
+            cout << "Error: Email invalido. Formato esperado: usuario@dominio.ext\n";
+            cout << "El email no se actualizo.\n";
+        }
+    }
+
+    cout << "Alergias actuales: " << p.alergias << "\nNuevas alergias: ";
+    leerLinea(buffer, 500);
+    if (strlen(buffer) > 0) {
+        strncpy(p.alergias, buffer, sizeof(p.alergias)-1);
+        p.alergias[sizeof(p.alergias)-1] = '\0';
+    }
+
+    cout << "Observaciones actuales: " << p.observaciones << "\nNuevas observaciones: ";
+    leerLinea(buffer, 500);
+    if (strlen(buffer) > 0) {
+        strncpy(p.observaciones, buffer, sizeof(p.observaciones)-1);
+        p.observaciones[sizeof(p.observaciones)-1] = '\0';
+    }
+
+    // Actualizar fecha de modificación
+    p.fechaModificacion = time(0);
+
+    if (guardarPaciente(p)) {
+        cout << "Paciente actualizado correctamente.\n";
+        return true;
+    } else {
+        cout << "Error al guardar los cambios.\n";
+        return false;
+    }
+}
+
+// =====================================================
+// BÚSQUEDA POR NOMBRE (SISTEMA ARCHIVOS)
+// =====================================================
+
+Paciente** buscarPacientesPorNombre(const char* nombre, int* cantidad) {
+    ArchivoHeader header = leerHeader("DATA/pacientes.bin");
+    *cantidad = 0;
+    
+    // Primero contar cuántos coinciden
+    for (int i = 0; i < header.cantidadRegistros; i++) {
+        Paciente p = leerPacientePorIndice(i);
+        if (!p.eliminado) {
+            char full[120];
+            snprintf(full, sizeof(full), "%s %s", p.nombre, p.apellido);
+            if (strstr(full, nombre) != nullptr) {
+                (*cantidad)++;
+            }
+        }
+    }
+    
+    if (*cantidad == 0) return nullptr;
+    
+    // Crear array de resultados
+    Paciente** resultados = new Paciente*[*cantidad];
+    int pos = 0;
+    
+    // Llenar el array
+    for (int i = 0; i < header.cantidadRegistros; i++) {
+        Paciente p = leerPacientePorIndice(i);
+        if (!p.eliminado) {
+            char full[120];
+            snprintf(full, sizeof(full), "%s %s", p.nombre, p.apellido);
+            if (strstr(full, nombre) != nullptr) {
+                resultados[pos] = new Paciente;
+                *resultados[pos] = p;
+                pos++;
+            }
+        }
+    }
+    
+    return resultados;
+}
 bool inicializarSistemaArchivos() {
     if (!crearDirectorioData()) {
         cout << "Error: No se pudo crear directorio DATA\n";
@@ -237,10 +366,14 @@ Hospital* cargarDatosHospital() {
     
     archivo.read((char*)hospital, sizeof(Hospital));
     archivo.close();
-    
+        cout << "=== SISTEMA DE GESTION HOSPITALARIO v2.0 ===\n";
+    cout << "===    (Sistema de Archivos Binarios)    ===\n\n";
     cout << "Sistema de archivos cargado correctamente.\n";
+    system("pause");
+    system("cls");
+    
     return hospital;
-    Sleep(3);
+    
 }
 
 bool guardarDatosHospital(Hospital* hospital) {
@@ -810,11 +943,13 @@ void menuPacientes(Hospital* h) {
         cout << "1. Registrar paciente\n";
         cout << "2. Buscar paciente por cedula\n";
         cout << "3. Buscar paciente por ID\n";
-        cout << "4. Listar todos los pacientes\n";
-        cout << "5. Eliminar paciente\n";
+        cout << "4. Buscar pacientes por nombre\n";  // NUEVA OPCIÓN
+        cout << "5. Listar todos los pacientes\n";
+        cout << "6. Actualizar paciente\n";          // NUEVA OPCIÓN
+        cout << "7. Eliminar paciente\n";
         cout << "0. Volver\n";
         cout << "Elija: ";
-        op = leerEntero();
+    op = leerEntero();
         
         if (op == -1) { 
             cout << "Entrada invalida.\n"; 
@@ -913,10 +1048,48 @@ void menuPacientes(Hospital* h) {
                 break;
             }
             case 4: {
-                listarPacientes(h);
+                  // NUEVO: Búsqueda por nombre
+                char nombre[50]; 
+                cout << "Nombre o apellido a buscar: "; 
+                limpiarBufferEntrada(); 
+                leerLinea(nombre, 50);
+                int cantidad;
+                Paciente** resultados = buscarPacientesPorNombre(nombre, &cantidad);
+                if (!resultados || cantidad == 0) {
+                    cout << "No se encontraron pacientes con ese nombre.\n";
+                } else {
+                    cout << "\nResultados encontrados (" << cantidad << "):\n";
+                    cout << string(60, '-') << endl;
+                    for (int i = 0; i < cantidad; i++) {
+                        Paciente* p = resultados[i];
+                        cout << "ID: " << p->id << " - " << p->nombre << " " << p->apellido << "\n";
+                        cout << "  Cedula: " << p->cedula << "  Edad: " << p->edad << "  Sexo: " << p->sexo << "\n";
+                        cout << "  Telefono: " << p->telefono << "  Email: " << p->email << "\n";
+                        cout << string(60, '-') << endl;
+                        delete p;  // Liberar memoria
+                    }
+                    delete[] resultados;  // Liberar array
+                }
                 break;
             }
             case 5: {
+                listarPacientes(h);
+                break;
+            }
+            case 6: {  // NUEVO: Actualizar paciente
+                int id; 
+                cout << "ID del paciente a actualizar: "; 
+                id = leerEntero();
+                if (id <= 0) {
+                    cout << "ID invalido.\n";
+                    break;
+                }
+                if (!actualizarPaciente(h, id)) {
+                    cout << "No se pudo actualizar el paciente.\n";
+                }
+                break;
+            }
+            case 7: {
                 int id; 
                 cout << "ID a eliminar: "; 
                 id = leerEntero();
@@ -1104,10 +1277,6 @@ void verificarSistemaArchivos() {
 
 int main() {
     setlocale(LC_ALL, "spanish");
-
-    cout << "=== SISTEMA DE GESTION HOSPITALARIO v2.0 ===\n";
-    cout << "===    (Sistema de Archivos Binarios)    ===\n\n";
-
     Hospital* h = cargarDatosHospital();
     if (!h) {
         cout << "Error: No se pudo cargar el sistema de archivos.\n";

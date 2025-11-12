@@ -2959,7 +2959,7 @@ void menuMantenimiento(Hospital* h) {
         }
         
         if (op != 0) {
-            system("cls");
+            system("pause");
         }
     } while (op != 0);
 }

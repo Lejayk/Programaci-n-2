@@ -1174,8 +1174,8 @@ void listarCitasPendientes() {
     
     int contador = 0;
     cout << "\nCitas pendientes:\n";
-    cout << left << setw(4) << "ID" << setw(10) << "PACIENTE" << setw(8) << "DOCTOR" 
-         << setw(12) << "FECHA" << setw(6) << "HORA" << setw(20) << "MOTIVO" << setw(12) << "ESTADO" << "\n";
+    cout << left << setw(4) << "ID" << setw(10) << "PACIENTE" << setw(8) << "DOCTOR(id)" 
+         << setw(12) << "FECHA" << setw(6) << "HORA" << setw(30) << "MOTIVO" << setw(12) << "ESTADO" << "\n";
     cout << string(80, '-') << endl;
     
     for (int i = 0; i < header.cantidadRegistros; i++) {
@@ -1193,7 +1193,7 @@ void listarCitasPendientes() {
                  << setw(8) << cita.doctorID
                  << setw(12) << cita.fecha
                  << setw(6) << cita.hora
-                 << setw(20) << cita.motivo
+                 << setw(30) << cita.motivo
                  << setw(12) << cita.estado << "\n";
             contador++;
         }

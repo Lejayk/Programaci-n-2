@@ -9,6 +9,11 @@
 
 using namespace std;
 
+// Prototipos usados antes de su definicion
+bool validarFecha(const char* fecha);
+bool validarHora(const char* hora);
+void limpiarBufferEntrada();
+
 // =====================================================
 // ESTRUCTURAS PARA PERSISTENCIA
 // =====================================================
@@ -126,40 +131,11 @@ struct Cita {
 // =====================================================
 const int VERSION_ARCHIVO = 1;
 const int MAX_RESULTADOS_BUSQUEDA = 100;
+const int MAX_CONSULTAS_PACIENTE = 1000;
 
 // =====================================================
 // FUNCIONES DE MANEJO DE ARCHIVOS
 // =====================================================
-
-// Forward declarations
-struct Paciente;
-struct Doctor;
-struct Cita;
-struct HistorialMedico;
-
-Paciente leerPacientePorIndice(int indice);
-Paciente buscarPacientePorID(int id);
-Paciente buscarPacientePorCedula(const char* cedula);
-bool guardarPaciente(Paciente &paciente);
-void limpiarBufferEntrada();
-void leerLinea(char* buffer, int size);
-bool validarEmail(const char* email);
-int leerEntero();
-bool validarCedula(const char* cedula);
-bool validarFecha(const char* fecha);
-bool validarHora(const char* hora);
-
-Doctor leerDoctorPorIndice(int indice);
-Doctor buscarDoctorPorID(int id);
-bool guardarDoctor(Doctor &doctor);
-
-Cita leerCitaPorIndice(int indice);
-Cita buscarCitaPorID(int id);
-bool guardarCita(Cita &cita);
-
-HistorialMedico leerHistorialPorIndice(int indice);
-HistorialMedico buscarHistorialPorID(int id);
-bool guardarHistorial(HistorialMedico &historial);
 
 bool crearDirectorioData() {
     #ifdef _WIN32
@@ -680,6 +656,591 @@ bool guardarHistorial(HistorialMedico &historial) {
 }
 
 // =====================================================
+// SISTEMA COMPLETO DE HISTORIAL MEDICO ENLAZADO
+// =====================================================
+
+HistorialMedico buscarUltimaConsultaPaciente(int pacienteID) {
+    Paciente paciente = buscarPacientePorID(pacienteID);
+    if (paciente.id == -1 || paciente.primerConsultaID == -1) {
+        HistorialMedico vacio;
+        vacio.id = -1;
+        return vacio;
+    }
+    
+    HistorialMedico actual = buscarHistorialPorID(paciente.primerConsultaID);
+    if (actual.id == -1) {
+        return actual;
+    }
+    
+    // Seguir la cadena hasta la ultima consulta
+    while (actual.siguienteConsultaID != -1) {
+        actual = buscarHistorialPorID(actual.siguienteConsultaID);
+        if (actual.id == -1) {
+            break;
+        }
+    }
+    
+    return actual;
+}
+
+bool agregarConsultaAlHistorial(int pacienteID, const char* diagnostico, 
+                               const char* tratamiento, const char* medicamentos, 
+                               int doctorID, float costo) {
+    
+    Paciente paciente = buscarPacientePorID(pacienteID);
+    if (paciente.id == -1) {
+        cout << "Error: Paciente no encontrado.\n";
+        return false;
+    }
+    
+    // Crear nueva consulta
+    HistorialMedico nuevaConsulta;
+    memset(&nuevaConsulta, 0, sizeof(HistorialMedico));
+    
+    ArchivoHeader header = leerHeader("DATA/historiales.bin");
+    nuevaConsulta.id = header.proximoID;
+    nuevaConsulta.pacienteID = pacienteID;
+    nuevaConsulta.doctorID = doctorID;
+    
+    // Obtener fecha y hora actual
+    time_t ahora = time(0);
+    tm* tiempoLocal = localtime(&ahora);
+    snprintf(nuevaConsulta.fecha, sizeof(nuevaConsulta.fecha), 
+             "%04d-%02d-%02d", 
+             tiempoLocal->tm_year + 1900, 
+             tiempoLocal->tm_mon + 1, 
+             tiempoLocal->tm_mday);
+    snprintf(nuevaConsulta.hora, sizeof(nuevaConsulta.hora), 
+             "%02d:%02d", 
+             tiempoLocal->tm_hour, 
+             tiempoLocal->tm_min);
+    
+    strncpy(nuevaConsulta.diagnostico, diagnostico, sizeof(nuevaConsulta.diagnostico)-1);
+    strncpy(nuevaConsulta.tratamiento, tratamiento, sizeof(nuevaConsulta.tratamiento)-1);
+    strncpy(nuevaConsulta.medicamentos, medicamentos, sizeof(nuevaConsulta.medicamentos)-1);
+    nuevaConsulta.costo = costo;
+    nuevaConsulta.fechaRegistro = ahora;
+    nuevaConsulta.eliminado = false;
+    nuevaConsulta.siguienteConsultaID = -1; // Siempre sera la ultima
+    
+    if (paciente.primerConsultaID == -1) {
+        // Primera consulta del paciente
+        paciente.primerConsultaID = nuevaConsulta.id;
+    } else {
+    // Buscar la ultima consulta y actualizar su enlace
+        HistorialMedico ultimaConsulta = buscarUltimaConsultaPaciente(pacienteID);
+        if (ultimaConsulta.id != -1) {
+            ultimaConsulta.siguienteConsultaID = nuevaConsulta.id;
+            if (!guardarHistorial(ultimaConsulta)) {
+                cout << "Error: No se pudo actualizar el enlace de la ultima consulta.\n";
+                return false;
+            }
+        } else {
+            cout << "Advertencia: No se pudo encontrar la ultima consulta para enlazar.\n";
+        }
+    }
+    
+    // Guardar la nueva consulta
+    if (!guardarHistorial(nuevaConsulta)) {
+        cout << "Error: No se pudo guardar la nueva consulta.\n";
+        return false;
+    }
+    
+    // Actualizar contador del paciente
+    paciente.cantidadConsultas++;
+    if (!guardarPaciente(paciente)) {
+        cout << "Error: No se pudo actualizar el contador de consultas del paciente.\n";
+        return false;
+    }
+    
+    cout << "Consulta agregada al historial correctamente. ID: " << nuevaConsulta.id << "\n";
+    return true;
+}
+
+bool atenderCitaMejorada(Hospital* h, int idCita, const char* diagnostico,
+                        const char* tratamiento, const char* medicamentos) {
+    
+    Cita cita = buscarCitaPorID(idCita);
+    if (cita.id == -1) {
+        cout << "Cita no encontrada.\n";
+        return false;
+    }
+    
+    if (strcmp(cita.estado, "Agendada") != 0) {
+        cout << "Error: La cita no esta en estado 'Agendada'.\n";
+        return false;
+    }
+    
+    // Obtener costo del doctor
+    Doctor doctor = buscarDoctorPorID(cita.doctorID);
+    float costoConsulta = (doctor.id != -1) ? doctor.costoConsulta : 0.0f;
+    
+    // Usar el sistema enlazado para agregar la consulta
+    if (!agregarConsultaAlHistorial(cita.pacienteID, diagnostico, tratamiento, 
+                                   medicamentos, cita.doctorID, costoConsulta)) {
+        return false;
+    }
+    
+    // Obtener el ID de la consulta recien creada
+    ArchivoHeader headerHistorial = leerHeader("DATA/historiales.bin");
+    int idConsultaCreada = headerHistorial.proximoID - 1;
+    
+    // Actualizar cita
+    cita.consultaID = idConsultaCreada;
+    strcpy(cita.estado, "Atendida");
+    cita.atendida = true;
+    cita.fechaModificacion = time(0);
+    
+    if (guardarCita(cita)) {
+        h->totalConsultasRealizadas++;
+        guardarDatosHospital(h);
+        cout << "Cita atendida y agregada al historial correctamente.\n";
+        return true;
+    } else {
+        cout << "Error al guardar los cambios de la cita.\n";
+        return false;
+    }
+}
+
+// Funcion auxiliar para ordenamiento burbuja de enteros
+void ordenarBurbuja(int arr[], int n) {
+    for (int i = 0; i < n-1; i++) {
+        for (int j = 0; j < n-i-1; j++) {
+            if (arr[j] > arr[j+1]) {
+                int temp = arr[j];
+                arr[j] = arr[j+1];
+                arr[j+1] = temp;
+            }
+        }
+    }
+}
+
+bool repararListaHistorialPaciente(int pacienteID) {
+    Paciente paciente = buscarPacientePorID(pacienteID);
+    if (paciente.id == -1) {
+        cout << "Paciente no encontrado.\n";
+        return false;
+    }
+    
+    if (paciente.primerConsultaID == -1) {
+        cout << "El paciente no tiene consultas en el historial.\n";
+        return true;
+    }
+    
+    cout << "Reparando lista enlazada del paciente " << paciente.nombre << "...\n";
+    
+    // Recorrer todas las consultas del paciente y reconstruir la lista
+    ArchivoHeader header = leerHeader("DATA/historiales.bin");
+    int consultasDelPaciente[MAX_CONSULTAS_PACIENTE];
+    int numConsultas = 0;
+    
+    // Colectar todas las consultas del paciente
+    for (int i = 0; i < header.cantidadRegistros && numConsultas < MAX_CONSULTAS_PACIENTE; i++) {
+        HistorialMedico consulta = leerHistorialPorIndice(i);
+        if (!consulta.eliminado && consulta.pacienteID == pacienteID) {
+            consultasDelPaciente[numConsultas++] = consulta.id;
+        }
+    }
+    
+    if (numConsultas == 0) {
+        cout << "No se encontraron consultas para el paciente.\n";
+        paciente.primerConsultaID = -1;
+        paciente.cantidadConsultas = 0;
+        return guardarPaciente(paciente);
+    }
+    
+    // Ordenar por ID (asumiendo que IDs mas altos son mas recientes)
+    ordenarBurbuja(consultasDelPaciente, numConsultas);
+    
+    // Reconstruir enlaces
+    paciente.primerConsultaID = consultasDelPaciente[0];
+    paciente.cantidadConsultas = numConsultas;
+    
+    for (int i = 0; i < numConsultas; i++) {
+        HistorialMedico consulta = buscarHistorialPorID(consultasDelPaciente[i]);
+        if (consulta.id != -1) {
+            if (i == numConsultas - 1) {
+                consulta.siguienteConsultaID = -1; // Ultima consulta
+            } else {
+                consulta.siguienteConsultaID = consultasDelPaciente[i + 1];
+            }
+            guardarHistorial(consulta);
+        }
+    }
+    
+    if (guardarPaciente(paciente)) {
+        cout << "Lista enlazada reparada correctamente. Total consultas: " 
+             << numConsultas << "\n";
+        return true;
+    }
+    
+    return false;
+}
+
+// =====================================================
+// SISTEMA COMPLETO DE MANTENIMIENTO
+// =====================================================
+
+bool compactarArchivo(const char* nombreArchivo, size_t tamanoRegistro) {
+    string archivoTemp = string(nombreArchivo) + ".tmp";
+    
+    // Abrir archivo original y temporal
+    ifstream archivoOrig(nombreArchivo, ios::binary);
+    ofstream archivoTempStream(archivoTemp, ios::binary);
+    
+    if (!archivoOrig.is_open() || !archivoTempStream.is_open()) {
+        cout << "Error: No se pudieron abrir los archivos para compactacion.\n";
+        return false;
+    }
+    
+    // Leer header original
+    ArchivoHeader headerOrig;
+    archivoOrig.read((char*)&headerOrig, sizeof(ArchivoHeader));
+    
+    // Preparar nuevo header
+    ArchivoHeader headerNuevo;
+    headerNuevo.cantidadRegistros = 0;
+    headerNuevo.proximoID = headerOrig.proximoID;
+    headerNuevo.registrosActivos = 0;
+    headerNuevo.version = headerOrig.version;
+    
+    // Escribir header temporal
+    archivoTempStream.write((char*)&headerNuevo, sizeof(ArchivoHeader));
+    
+    // Procesar registros
+    int nuevosRegistros = 0;
+    for (int i = 0; i < headerOrig.cantidadRegistros; i++) {
+        char* buffer = new char[tamanoRegistro];
+        archivoOrig.read(buffer, tamanoRegistro);
+        
+    // Verificar si el registro esta eliminado (primer byte despues del ID)
+    bool eliminado = *((bool*)(buffer + sizeof(int)));
+        
+        if (!eliminado) {
+            archivoTempStream.write(buffer, tamanoRegistro);
+            nuevosRegistros++;
+        }
+        delete[] buffer;
+    }
+    
+    // Actualizar header del archivo temporal
+    headerNuevo.cantidadRegistros = nuevosRegistros;
+    headerNuevo.registrosActivos = nuevosRegistros;
+    archivoTempStream.seekp(0);
+    archivoTempStream.write((char*)&headerNuevo, sizeof(ArchivoHeader));
+    
+    archivoOrig.close();
+    archivoTempStream.close();
+    
+    // Reemplazar archivo original
+    if (remove(nombreArchivo) != 0) {
+        cout << "Error: No se pudo eliminar el archivo original.\n";
+        return false;
+    }
+    
+    if (rename(archivoTemp.c_str(), nombreArchivo) != 0) {
+        cout << "Error: No se pudo renombrar el archivo temporal.\n";
+        return false;
+    }
+    
+    cout << "Archivo compactado: " << nuevosRegistros << " registros activos.\n";
+    return true;
+}
+
+void compactarTodosArchivos() {
+    cout << "\n=== COMPACTACION DE ARCHIVOS ===\n";
+
+    cout << "Compactando pacientes...\n";
+    if (compactarArchivo("DATA/pacientes.bin", sizeof(Paciente))) {
+        cout << "Pacientes compactados correctamente.\n";
+    } else {
+        cout << "Error compactando pacientes.\n";
+    }
+
+    cout << "Compactando doctores...\n";
+    if (compactarArchivo("DATA/doctores.bin", sizeof(Doctor))) {
+        cout << "Doctores compactados correctamente.\n";
+    } else {
+        cout << "Error compactando doctores.\n";
+    }
+
+    cout << "Compactando citas...\n";
+    if (compactarArchivo("DATA/citas.bin", sizeof(Cita))) {
+        cout << "Citas compactadas correctamente.\n";
+    } else {
+        cout << "Error compactando citas.\n";
+    }
+
+    cout << "Compactando historiales...\n";
+    if (compactarArchivo("DATA/historiales.bin", sizeof(HistorialMedico))) {
+        cout << "Historiales compactados correctamente.\n";
+    } else {
+        cout << "Error compactando historiales.\n";
+    }
+
+    cout << "Compactacion completada.\n";
+}
+
+bool crearRespaldo(const char* directorio) {
+    string comando = "mkdir \"" + string(directorio) + "\" 2>nul";
+    system(comando.c_str());
+    
+    const char* archivos[] = {"hospital.bin", "pacientes.bin", "doctores.bin", "citas.bin", "historiales.bin"};
+    int numArchivos = 5;
+    bool success = true;
+    
+    cout << "\n=== CREANDO RESPALDO ===\n";
+    
+    for (int i = 0; i < numArchivos; i++) {
+        string origen = "DATA/" + string(archivos[i]);
+        string destino = string(directorio) + "/" + archivos[i];
+        
+        ifstream src(origen, ios::binary);
+        ofstream dst(destino, ios::binary);
+        
+        if (src.is_open() && dst.is_open()) {
+            dst << src.rdbuf();
+            cout << archivos[i] << " respaldado correctamente.\n";
+        } else {
+            cout << "Error respaldando " << archivos[i] << "\n";
+            success = false;
+        }
+        
+        src.close();
+        dst.close();
+    }
+    
+    if (success) {
+        cout << "Respaldo completado en: " << directorio << "\n";
+    }
+    
+    return success;
+}
+
+bool restaurarRespaldo(const char* directorio) {
+    cout << "\nADVERTENCIA: Esta accion sobreescribira todos los datos actuales.\n";
+    cout << "Esta seguro? (s/n): ";
+    char confirmacion;
+    cin >> confirmacion;
+    limpiarBufferEntrada();
+    
+    if (confirmacion != 's' && confirmacion != 'S') {
+        cout << "Restauracion cancelada.\n";
+        return false;
+    }
+    
+    const char* archivos[] = {"hospital.bin", "pacientes.bin", "doctores.bin", "citas.bin", "historiales.bin"};
+    int numArchivos = 5;
+    bool success = true;
+    
+    cout << "\n=== RESTAURANDO DESDE RESPALDO ===\n";
+    
+    for (int i = 0; i < numArchivos; i++) {
+        string origen = string(directorio) + "/" + archivos[i];
+    string destino = string("DATA/") + archivos[i];
+        
+        ifstream src(origen, ios::binary);
+        ofstream dst(destino, ios::binary);
+        
+        if (src.is_open() && dst.is_open()) {
+            dst << src.rdbuf();
+            cout << archivos[i] << " restaurado correctamente.\n";
+        } else {
+            cout << "Error restaurando " << archivos[i] << "\n";
+            success = false;
+        }
+        
+        src.close();
+        dst.close();
+    }
+    
+    if (success) {
+        cout << "Restauracion completada desde: " << directorio << "\n";
+    }
+    
+    return success;
+}
+
+void verificarIntegridadReferencial() {
+    cout << "\n=== VERIFICACION DE INTEGRIDAD REFERENCIAL ===\n";
+    
+    int errores = 0;
+    
+    // Verificar citas -> pacientes
+    ArchivoHeader headerCitas = leerHeader("DATA/citas.bin");
+    for (int i = 0; i < headerCitas.cantidadRegistros; i++) {
+        Cita cita = leerCitaPorIndice(i);
+        if (!cita.eliminado) {
+            Paciente paciente = buscarPacientePorID(cita.pacienteID);
+                if (paciente.id == -1 || paciente.eliminado) {
+                cout << "Cita #" << cita.id << " referencia paciente inexistente: " << cita.pacienteID << "\n";
+                errores++;
+            }
+            
+            Doctor doctor = buscarDoctorPorID(cita.doctorID);
+            if (doctor.id == -1 || doctor.eliminado) {
+                cout << "Cita #" << cita.id << " referencia doctor inexistente: " << cita.doctorID << "\n";
+                errores++;
+            }
+        }
+    }
+    
+    // Verificar historiales -> pacientes
+    ArchivoHeader headerHistorial = leerHeader("DATA/historiales.bin");
+    for (int i = 0; i < headerHistorial.cantidadRegistros; i++) {
+        HistorialMedico historial = leerHistorialPorIndice(i);
+        if (!historial.eliminado) {
+            Paciente paciente = buscarPacientePorID(historial.pacienteID);
+            if (paciente.id == -1 || paciente.eliminado) {
+                cout << "Historial #" << historial.id << " referencia paciente inexistente: " << historial.pacienteID << "\n";
+                errores++;
+            }
+            
+            Doctor doctor = buscarDoctorPorID(historial.doctorID);
+            if (doctor.id == -1 || doctor.eliminado) {
+                cout << "Historial #" << historial.id << " referencia doctor inexistente: " << historial.doctorID << "\n";
+                errores++;
+            }
+        }
+    }
+    
+    // Verificar listas enlazadas de historial
+    ArchivoHeader headerPacientes = leerHeader("DATA/pacientes.bin");
+    for (int i = 0; i < headerPacientes.cantidadRegistros; i++) {
+        Paciente paciente = leerPacientePorIndice(i);
+        if (!paciente.eliminado && paciente.primerConsultaID != -1) {
+            int consultaID = paciente.primerConsultaID;
+            int contador = 0;
+            int maxConsultas = paciente.cantidadConsultas + 10; // Limite de seguridad
+            
+            while (consultaID != -1 && contador < maxConsultas) {
+                HistorialMedico consulta = buscarHistorialPorID(consultaID);
+                    if (consulta.id == -1 || consulta.eliminado) {
+                    cout << "Paciente #" << paciente.id << " tiene referencia rota en historial: " << consultaID << "\n";
+                    errores++;
+                    break;
+                }
+                consultaID = consulta.siguienteConsultaID;
+                contador++;
+            }
+            
+            if (contador >= maxConsultas) {
+                cout << "Paciente #" << paciente.id << " posible ciclo infinito en historial\n";
+            }
+        }
+    }
+    
+    if (errores == 0) {
+        cout << "Integridad referencial verificada: Sin errores encontrados.\n";
+    } else {
+        cout << "Se encontraron " << errores << " errores de integridad.\n";
+    }
+}
+
+void repararIntegridadReferencial() {
+    cout << "\n=== REPARACION DE INTEGRIDAD REFERENCIAL ===\n";
+    
+    int reparaciones = 0;
+    
+    // Reparar citas con referencias rotas
+    ArchivoHeader headerCitas = leerHeader("DATA/citas.bin");
+    for (int i = 0; i < headerCitas.cantidadRegistros; i++) {
+        Cita cita = leerCitaPorIndice(i);
+        if (!cita.eliminado) {
+            bool necesitaReparacion = false;
+            
+            Paciente paciente = buscarPacientePorID(cita.pacienteID);
+            if (paciente.id == -1 || paciente.eliminado) {
+                cout << "Reparando cita #" << cita.id << ": Paciente " << cita.pacienteID << " no existe\n";
+                cita.eliminado = true;
+                strcpy(cita.estado, "Cancelada");
+                necesitaReparacion = true;
+            }
+            
+            Doctor doctor = buscarDoctorPorID(cita.doctorID);
+            if (doctor.id == -1 || doctor.eliminado) {
+                cout << "Reparando cita #" << cita.id << ": Doctor " << cita.doctorID << " no existe\n";
+                cita.eliminado = true;
+                strcpy(cita.estado, "Cancelada");
+                necesitaReparacion = true;
+            }
+            
+            if (necesitaReparacion) {
+                guardarCita(cita);
+                reparaciones++;
+            }
+        }
+    }
+    
+    // Reparar historiales con referencias rotas
+    ArchivoHeader headerHistorial = leerHeader("DATA/historiales.bin");
+    for (int i = 0; i < headerHistorial.cantidadRegistros; i++) {
+        HistorialMedico historial = leerHistorialPorIndice(i);
+        if (!historial.eliminado) {
+            Paciente paciente = buscarPacientePorID(historial.pacienteID);
+            if (paciente.id == -1 || paciente.eliminado) {
+                cout << "Marcando historial #" << historial.id << " como eliminado: Paciente no existe\n";
+                historial.eliminado = true;
+                guardarHistorial(historial);
+                reparaciones++;
+            }
+        }
+    }
+    
+    cout << "Reparacion completada: " << reparaciones << " registros reparados.\n";
+}
+
+void mostrarEstadisticasDetalladas() {
+    cout << "\n=== ESTADISTICAS DETALLADAS DEL SISTEMA ===\n";
+    
+    ArchivoHeader hp = leerHeader("DATA/pacientes.bin");
+    ArchivoHeader hd = leerHeader("DATA/doctores.bin");
+    ArchivoHeader hc = leerHeader("DATA/citas.bin");
+    ArchivoHeader hh = leerHeader("DATA/historiales.bin");
+    
+    cout << "PACIENTES:\n";
+    cout << "   Total registros: " << hp.cantidadRegistros << "\n";
+    cout << "   Registros activos: " << hp.registrosActivos << "\n";
+    cout << "   Registros eliminados: " << (hp.cantidadRegistros - hp.registrosActivos) << "\n";
+    cout << "   Proximo ID: " << hp.proximoID << "\n";
+    
+    cout << "DOCTORES:\n";
+    cout << "   Total registros: " << hd.cantidadRegistros << "\n";
+    cout << "   Registros activos: " << hd.registrosActivos << "\n";
+    cout << "   Registros eliminados: " << (hd.cantidadRegistros - hd.registrosActivos) << "\n";
+    cout << "   Proximo ID: " << hd.proximoID << "\n";
+    
+    cout << "CITAS:\n";
+    cout << "   Total registros: " << hc.cantidadRegistros << "\n";
+    cout << "   Registros activos: " << hc.registrosActivos << "\n";
+    cout << "   Registros eliminados: " << (hc.cantidadRegistros - hc.registrosActivos) << "\n";
+    cout << "   Proximo ID: " << hc.proximoID << "\n";
+    
+    cout << "HISTORIALES:\n";
+    cout << "   Total registros: " << hh.cantidadRegistros << "\n";
+    cout << "   Registros activos: " << hh.registrosActivos << "\n";
+    cout << "   Registros eliminados: " << (hh.cantidadRegistros - hh.registrosActivos) << "\n";
+    cout << "   Proximo ID: " << hh.proximoID << "\n";
+    
+    // Calcular uso de disco
+    long tamanoTotal = 
+        (hp.cantidadRegistros * sizeof(Paciente)) +
+        (hd.cantidadRegistros * sizeof(Doctor)) +
+        (hc.cantidadRegistros * sizeof(Cita)) +
+        (hh.cantidadRegistros * sizeof(HistorialMedico)) +
+        sizeof(ArchivoHeader) * 4;
+
+    cout << "USO DE DISCO:\n";
+    cout << "   Tamano aproximado: " << (tamanoTotal / 1024.0) << " KB\n";
+    cout << "   Espacio desperdiciado (eliminados): " 
+         << (((hp.cantidadRegistros - hp.registrosActivos) * sizeof(Paciente) +
+             ((hd.cantidadRegistros - hd.registrosActivos) * sizeof(Doctor)) +
+             ((hc.cantidadRegistros - hc.registrosActivos) * sizeof(Cita)) +
+             ((hh.cantidadRegistros - hh.registrosActivos) * sizeof(HistorialMedico))) / 1024.0)
+         << " KB\n";
+}
+
+// =====================================================
 // FUNCIONES DE GESTION DE CITAS (SIN MEMORIA DINAMICA)
 // =====================================================
 
@@ -688,7 +1249,7 @@ bool verificarDisponibilidadDoctor(int idDoctor, const char* fecha, const char* 
     
     for (int i = 0; i < header.cantidadRegistros; i++) {
         Cita cita = leerCitaPorIndice(i);
-            if (!cita.eliminado && 
+        if (!cita.eliminado && 
             cita.doctorID == idDoctor && 
             strcmp(cita.estado, "Agendada") == 0 &&
             strcmp(cita.fecha, fecha) == 0 && 
@@ -807,78 +1368,10 @@ bool cancelarCita(int idCita) {
     }
 }
 
+// Reemplazar la función atenderCita existente con la versión mejorada
 bool atenderCita(Hospital* h, int idCita, const char* diagnostico,
                  const char* tratamiento, const char* medicamentos) {
-    
-    Cita cita = buscarCitaPorID(idCita);
-    if (cita.id == -1) {
-        cout << "Cita no encontrada.\n";
-        return false;
-    }
-    
-    if (strcmp(cita.estado, "Agendada") != 0) {
-        cout << "Error: La cita no esta en estado 'Agendada'.\n";
-        return false;
-    }
-    
-    // Crear registro de historial medico
-    HistorialMedico nuevaConsulta;
-    memset(&nuevaConsulta, 0, sizeof(HistorialMedico));
-    
-    // Asignar ID desde el header del historial
-    ArchivoHeader headerHistorial = leerHeader("DATA/historiales.bin");
-    nuevaConsulta.id = headerHistorial.proximoID;
-    nuevaConsulta.pacienteID = cita.pacienteID;
-    nuevaConsulta.doctorID = cita.doctorID;
-    strncpy(nuevaConsulta.fecha, cita.fecha, sizeof(nuevaConsulta.fecha)-1);
-    strncpy(nuevaConsulta.hora, cita.hora, sizeof(nuevaConsulta.hora)-1);
-    strncpy(nuevaConsulta.diagnostico, diagnostico, sizeof(nuevaConsulta.diagnostico)-1);
-    strncpy(nuevaConsulta.tratamiento, tratamiento, sizeof(nuevaConsulta.tratamiento)-1);
-    strncpy(nuevaConsulta.medicamentos, medicamentos, sizeof(nuevaConsulta.medicamentos)-1);
-    nuevaConsulta.fechaRegistro = time(0);
-    nuevaConsulta.eliminado = false;
-    nuevaConsulta.siguienteConsultaID = -1;
-    
-    // Obtener costo del doctor
-    Doctor doctor = buscarDoctorPorID(cita.doctorID);
-    if (doctor.id != -1) {
-        nuevaConsulta.costo = doctor.costoConsulta;
-    } else {
-        nuevaConsulta.costo = 0.0f;
-    }
-    
-    // Guardar en archivo de historiales
-    if (!guardarHistorial(nuevaConsulta)) {
-        cout << "Error al guardar el historial medico.\n";
-        return false;
-    }
-    
-    // Actualizar cita con ID de consulta
-    cita.consultaID = nuevaConsulta.id;
-    strcpy(cita.estado, "Atendida");
-    cita.atendida = true;
-    cita.fechaModificacion = time(0);
-    
-    if (guardarCita(cita)) {
-        // Actualizar paciente (incrementar contador de consultas)
-        Paciente paciente = buscarPacientePorID(cita.pacienteID);
-        if (paciente.id != -1) {
-            if (paciente.cantidadConsultas == 0) {
-                paciente.primerConsultaID = nuevaConsulta.id;
-            }
-            paciente.cantidadConsultas++;
-            guardarPaciente(paciente);
-        }
-        
-        h->totalConsultasRealizadas++;
-        guardarDatosHospital(h);
-        
-        cout << "Cita atendida y agregada al historial correctamente. Consulta ID: " << nuevaConsulta.id << "\n";
-        return true;
-    } else {
-        cout << "Error al guardar los cambios de la cita.\n";
-        return false;
-    }
+    return atenderCitaMejorada(h, idCita, diagnostico, tratamiento, medicamentos);
 }
 
 // =====================================================
@@ -1806,6 +2299,7 @@ void mostrarMenuPrincipal() {
     cout << "3. Gestion de Citas\n";
     cout << "4. Mostrar Datos del Hospital\n";
     cout << "5. Verificar Sistema de Archivos\n";
+    cout << "6. Mantenimiento del Sistema\n";
     cout << "0. Salir\n";
     cout << "Elija una opcion: ";
 }
@@ -2311,14 +2805,14 @@ void verificarSistemaArchivos() {
     string archivos[] = {"hospital.bin", "pacientes.bin", "doctores.bin", "citas.bin", "historiales.bin"};
     bool todosExisten = true;
     
-    for (const string& archivo : archivos) {
-        string ruta = "DATA/" + archivo;
+    for (int i = 0; i < 5; i++) {
+    string ruta = string("DATA/") + archivos[i];
         ifstream file(ruta, ios::binary);
-        if (!file.is_open()) {
-            cout << archivo << " - NO EXISTE\n";
+        if (file.is_open()) {
+            cout << archivos[i] << " - EXISTE\n";
             file.close();
         } else {
-            cout << "Error " << archivo << " - NO EXISTE\n";
+            cout << archivos[i] << " - NO EXISTE\n";
             todosExisten = false;
         }
     }
@@ -2336,7 +2830,7 @@ void verificarSistemaArchivos() {
         cout << "Citas registradas: " << hc.registrosActivos << "/" << hc.cantidadRegistros << "\n";
         cout << "Consultas en historial: " << hh.registrosActivos << "/" << hh.cantidadRegistros << "\n";
     } else {
-    cout << "\n  Algunos archivos no existen. Desea inicializar el sistema? (s/n): ";
+        cout << "\nAlgunos archivos no existen. Desea inicializar el sistema? (s/n): ";
         char op;
         cin >> op;
         if (op == 's' || op == 'S') {
@@ -2350,6 +2844,119 @@ void verificarSistemaArchivos() {
     
     system("pause");
     system("cls");
+}
+
+// =====================================================
+// MENU DE MANTENIMIENTO COMPLETO
+// =====================================================
+
+void menuMantenimiento(Hospital* h) {
+    int op = -1;
+    do {
+        system("pause");
+        system("cls");
+    cout << "\n=== MENU DE MANTENIMIENTO ===\n";
+        cout << "1. Verificar integridad de archivos\n";
+        cout << "2. Verificar integridad referencial\n";
+        cout << "3. Reparar integridad referencial\n";
+        cout << "4. Compactar archivos (eliminar registros borrados)\n";
+        cout << "5. Crear respaldo de datos\n";
+        cout << "6. Restaurar desde respaldo\n";
+        cout << "7. Mostrar estadisticas detalladas\n";
+        cout << "8. Reparar lista de historial de paciente\n";
+        cout << "0. Volver al menu principal\n";
+        cout << "Elija una opcion: ";
+        op = leerEntero();
+        
+        switch(op) {
+            case 1: {
+                cout << "\n=== VERIFICACION DE SISTEMA DE ARCHIVOS ===\n";
+                string archivos[] = {"hospital.bin", "pacientes.bin", "doctores.bin", "citas.bin", "historiales.bin"};
+                bool todosExisten = true;
+                
+                for (int i = 0; i < 5; i++) {
+                    string ruta = string("DATA/") + archivos[i];
+                    ifstream file(ruta, ios::binary);
+                    if (file.is_open()) {
+                        cout << archivos[i] << " - EXISTE\n";
+                        file.close();
+                    } else {
+                        cout << archivos[i] << " - NO EXISTE\n";
+                        todosExisten = false;
+                    }
+                }
+                
+                if (todosExisten) {
+                    cout << "\nTodos los archivos del sistema estan presentes.\n";
+                } else {
+                    cout << "\nAlgunos archivos no existen. El sistema puede no funcionar correctamente.\n";
+                }
+                break;
+            }
+            case 2: {
+                verificarIntegridadReferencial();
+                break;
+            }
+            case 3: {
+                repararIntegridadReferencial();
+                break;
+            }
+            case 4: {
+                cout << "\nADVERTENCIA: La compactacion eliminara permanentemente\n";
+                cout << "todos los registros marcados como eliminados.\n";
+                cout << "Desea continuar? (s/n): ";
+                char confirmacion;
+                cin >> confirmacion;
+                limpiarBufferEntrada();
+                
+                if (confirmacion == 's' || confirmacion == 'S') {
+                    compactarTodosArchivos();
+                } else {
+                    cout << "Compactacion cancelada.\n";
+                }
+                break;
+            }
+            case 5: {
+                char directorio[100];
+                cout << "Directorio para respaldo (ej: BACKUP): ";
+                limpiarBufferEntrada();
+                leerLinea(directorio, 100);
+                crearRespaldo(directorio);
+                break;
+            }
+            case 6: {
+                char directorio[100];
+                cout << "Directorio del respaldo a restaurar: ";
+                limpiarBufferEntrada();
+                leerLinea(directorio, 100);
+                restaurarRespaldo(directorio);
+                break;
+            }
+            case 7: {
+                mostrarEstadisticasDetalladas();
+                break;
+            }
+            case 8: {
+                int idPaciente;
+                cout << "ID del paciente a reparar: ";
+                idPaciente = leerEntero();
+                repararListaHistorialPaciente(idPaciente);
+                break;
+            }
+            case 0: {
+                system("cls");
+                break;
+            }
+            default: {
+                cout << "Opcion invalida.\n";
+                break;
+            }
+        }
+        
+        if (op != 0) {
+            system("pause");
+        }
+    } while (op != 0);
 }
 
 // =====================================================
@@ -2384,6 +2991,9 @@ int main() {
                 break;
             case 5:
                 verificarSistemaArchivos();
+                break;
+            case 6:
+                menuMantenimiento(h);
                 break;
             case 0:
                 cout << "Saliendo del sistema...\n";

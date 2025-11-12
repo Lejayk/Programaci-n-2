@@ -2653,7 +2653,11 @@ void menuDoctores(Hospital* h) {
         }
     } while (op != 0);
 }
-
+void mostrarDirectorioActual() {
+    char buffer[MAX_PATH];
+    GetCurrentDirectory(MAX_PATH, buffer);
+    cout << " Directorio actual: " << buffer << "\n";
+}
 void menuCitas(Hospital* h) {
     int op = -1;
     do {
@@ -2853,7 +2857,7 @@ void verificarSistemaArchivos() {
 void menuMantenimiento(Hospital* h) {
     int op = -1;
     do {
-        system("pause");
+        
         system("cls");
     cout << "\n=== MENU DE MANTENIMIENTO ===\n";
         cout << "1. Verificar integridad de archivos\n";
@@ -2870,6 +2874,7 @@ void menuMantenimiento(Hospital* h) {
         
         switch(op) {
             case 1: {
+                mostrarDirectorioActual();
                 cout << "\n=== VERIFICACION DE SISTEMA DE ARCHIVOS ===\n";
                 string archivos[] = {"hospital.bin", "pacientes.bin", "doctores.bin", "citas.bin", "historiales.bin"};
                 bool todosExisten = true;
@@ -2954,7 +2959,7 @@ void menuMantenimiento(Hospital* h) {
         }
         
         if (op != 0) {
-            system("pause");
+            system("cls");
         }
     } while (op != 0);
 }

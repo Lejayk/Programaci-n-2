@@ -1,91 +1,284 @@
 #include "Cita.hpp"
 #include <iostream>
 #include <cstring>
+#include <cctype>
+#include <iomanip>
 
 Cita::Cita() {
-    id = 0;
-    idDoctor = 0;
-    idPaciente = 0;
-    dia = mes = anio = hora = minuto = 0;
-    atendida = false;
-    eliminada = false;
+    memset(fecha, 0, sizeof(fecha));
+    memset(hora, 0, sizeof(hora));
     memset(motivo, 0, sizeof(motivo));
-
+    memset(estado, 0, sizeof(estado));
+    memset(observaciones, 0, sizeof(observaciones));
+    
+    id = 0;
+    pacienteID = -1;
+    doctorID = -1;
+    strcpy(estado, "Agendada");
+    atendida = false;
+    consultaID = -1;
+    eliminado = false;
     fechaCreacion = time(nullptr);
     fechaModificacion = fechaCreacion;
 }
 
-Cita::Cita(int p, int d, const char* m) : Cita() {
-    idPaciente = p;
-    idDoctor = d;
-    strncpy(motivo, m, sizeof(motivo)-1);
+Cita::Cita(int pacienteID, int doctorID, const char* fecha, const char* hora, const char* motivo) : Cita() {
+    setPacienteID(pacienteID);
+    setDoctorID(doctorID);
+    setFecha(fecha);
+    setHora(hora);
+    setMotivo(motivo);
 }
 
-int Cita::getId() const { return id; }
-int Cita::getIdPaciente() const { return idPaciente; }
-int Cita::getIdDoctor() const { return idDoctor; }
-int Cita::getDia() const { return dia; }
-int Cita::getMes() const { return mes; }
-int Cita::getAnio() const { return anio; }
-int Cita::getHora() const { return hora; }
-int Cita::getMinuto() const { return minuto; }
-const char* Cita::getMotivo() const { return motivo; }
-bool Cita::getAtendida() const { return atendida; }
-bool Cita::getEliminada() const { return eliminada; }
+Cita::Cita(const Cita& other) {
+    memcpy(this, &other, sizeof(Cita));
+}
 
+// Getters
+int Cita::getId() const { return id; }
+int Cita::getPacienteID() const { return pacienteID; }
+int Cita::getDoctorID() const { return doctorID; }
+const char* Cita::getFecha() const { return fecha; }
+const char* Cita::getHora() const { return hora; }
+const char* Cita::getMotivo() const { return motivo; }
+const char* Cita::getEstado() const { return estado; }
+const char* Cita::getObservaciones() const { return observaciones; }
+bool Cita::getAtendida() const { return atendida; }
+int Cita::getConsultaID() const { return consultaID; }
+bool Cita::getEliminado() const { return eliminado; }
+time_t Cita::getFechaCreacion() const { return fechaCreacion; }
+time_t Cita::getFechaModificacion() const { return fechaModificacion; }
+
+// Setters con validaciones
 void Cita::setId(int id) {
     this->id = id;
     fechaModificacion = time(nullptr);
 }
 
-void Cita::setFecha(int d, int m, int a, int h, int min) {
-    dia=d; mes=m; anio=a; hora=h; minuto=min;
+void Cita::setPacienteID(int pacienteID) {
+    if (pacienteID <= 0) {
+        std::cout << "Error: ID de paciente invalido\n";
+        return;
+    }
+    this->pacienteID = pacienteID;
     fechaModificacion = time(nullptr);
 }
 
-void Cita::setMotivo(const char* m) {
-    strncpy(motivo, m, sizeof(motivo)-1);
+void Cita::setDoctorID(int doctorID) {
+    if (doctorID <= 0) {
+        std::cout << "Error: ID de doctor invalido\n";
+        return;
+    }
+    this->doctorID = doctorID;
     fechaModificacion = time(nullptr);
 }
 
-void Cita::setAtendida(bool a) {
-    atendida = a;
+void Cita::setFecha(const char* fecha) {
+    if (!validarFecha(fecha)) {
+        std::cout << "Error: Fecha invalida. Formato: YYYY-MM-DD\n";
+        return;
+    }
+    strncpy(this->fecha, fecha, sizeof(this->fecha) - 1);
+    this->fecha[sizeof(this->fecha) - 1] = '\0';
     fechaModificacion = time(nullptr);
 }
 
-void Cita::setEliminada(bool e) {
-    eliminada = e;
+void Cita::setHora(const char* hora) {
+    if (!validarHora(hora)) {
+        std::cout << "Error: Hora invalida. Formato: HH:MM (00-23:00-59)\n";
+        return;
+    }
+    strncpy(this->hora, hora, sizeof(this->hora) - 1);
+    this->hora[sizeof(this->hora) - 1] = '\0';
     fechaModificacion = time(nullptr);
 }
 
-void Cita::mostrarInformacionBasica() const {
-    std::cout << "Cita ID: " << id
-              << " Paciente: " << idPaciente
-              << " Doctor: " << idDoctor
-              << " Fecha: " << dia << "/" << mes << "/" << anio
-              << "\n";
+void Cita::setMotivo(const char* motivo) {
+    if (!motivo || strlen(motivo) == 0) {
+        std::cout << "Error: El motivo no puede estar vacio\n";
+        return;
+    }
+    if (strlen(motivo) >= sizeof(this->motivo)) {
+        std::cout << "Error: El motivo es demasiado largo\n";
+        return;
+    }
+    strncpy(this->motivo, motivo, sizeof(this->motivo) - 1);
+    this->motivo[sizeof(this->motivo) - 1] = '\0';
+    fechaModificacion = time(nullptr);
 }
 
-void Cita::mostrarInformacionCompleta() const {
-    std::cout << "\n=== CITA ID " << id << " ===\n";
-    std::cout << "Paciente: " << idPaciente << "\n";
-    std::cout << "Doctor: " << idDoctor << "\n";
-    std::cout << "Motivo: " << motivo << "\n";
-    std::cout << "Fecha: " << dia << "/" << mes << "/" << anio
-              << " " << hora << ":" << minuto << "\n";
-    std::cout << "Atendida: " << (atendida ? "SI" : "NO") << "\n";
+void Cita::setEstado(const char* estado) {
+    if (!estado || strlen(estado) == 0) {
+        std::cout << "Error: El estado no puede estar vacio\n";
+        return;
+    }
+    
+    // Estados válidos
+    const char* estadosValidos[] = {"Agendada", "Cancelada", "Atendida", "No asistio", "Reprogramada"};
+    bool valido = false;
+    for (int i = 0; i < 5; i++) {
+        if (strcmp(estado, estadosValidos[i]) == 0) {
+            valido = true;
+            break;
+        }
+    }
+    
+    if (!valido) {
+        std::cout << "Error: Estado invalido. Use: Agendada, Cancelada, Atendida, No asistio, Reprogramada\n";
+        return;
+    }
+    
+    strncpy(this->estado, estado, sizeof(this->estado) - 1);
+    this->estado[sizeof(this->estado) - 1] = '\0';
+    
+    // Actualizar estado de atendida automáticamente
+    if (strcmp(estado, "Atendida") == 0) {
+        this->atendida = true;
+    } else {
+        this->atendida = false;
+    }
+    
+    fechaModificacion = time(nullptr);
 }
 
-bool Cita::validarDatos() const {
-    if (idPaciente <= 0 || idDoctor <= 0) return false;
-    if (strlen(motivo) == 0) return false;
-    if (dia < 1 || dia > 31) return false;
-    if (mes < 1 || mes > 12) return false;
-    if (anio < 2020 || anio > 2050) return false;
+void Cita::setObservaciones(const char* observaciones) {
+    if (!observaciones) {
+        strncpy(this->observaciones, "", sizeof(this->observaciones) - 1);
+        return;
+    }
+    strncpy(this->observaciones, observaciones, sizeof(this->observaciones) - 1);
+    this->observaciones[sizeof(this->observaciones) - 1] = '\0';
+    fechaModificacion = time(nullptr);
+}
+
+void Cita::setAtendida(bool atendida) {
+    this->atendida = atendida;
+    if (atendida) {
+        strncpy(this->estado, "Atendida", sizeof(this->estado) - 1);
+    }
+    fechaModificacion = time(nullptr);
+}
+
+void Cita::setConsultaID(int consultaID) {
+    this->consultaID = consultaID;
+    fechaModificacion = time(nullptr);
+}
+
+void Cita::setEliminado(bool eliminado) {
+    this->eliminado = eliminado;
+    fechaModificacion = time(nullptr);
+}
+
+// Métodos de validación
+bool Cita::validarFecha(const char* fecha) const {
+    if (!fecha || strlen(fecha) != 10) return false;
+    
+    // Verificar formato YYYY-MM-DD
+    for (int i = 0; i < 10; i++) {
+        if (i == 4 || i == 7) {
+            if (fecha[i] != '-') return false;
+        } else {
+            if (fecha[i] < '0' || fecha[i] > '9') return false;
+        }
+    }
+    
+    // Validar componentes de fecha
+    int year = (fecha[0]-'0')*1000 + (fecha[1]-'0')*100 + (fecha[2]-'0')*10 + (fecha[3]-'0');
+    int month = (fecha[5]-'0')*10 + (fecha[6]-'0');
+    int day = (fecha[8]-'0')*10 + (fecha[9]-'0');
+    
+    if (year < 1900 || year > 2100) return false;
+    if (month < 1 || month > 12) return false;
+    
+    // Validar días según mes
+    int diasMes = 31;
+    if (month == 4 || month == 6 || month == 9 || month == 11) {
+        diasMes = 30;
+    } else if (month == 2) {
+        // Año bisiesto simplificado
+        diasMes = (year % 4 == 0) ? 29 : 28;
+    }
+    
+    if (day < 1 || day > diasMes) return false;
+    
     return true;
 }
 
-size_t Cita::obtenerTamano() { return sizeof(Cita); }
+bool Cita::validarHora(const char* hora) const {
+    if (!hora || strlen(hora) != 5) return false;
+    
+    // Verificar formato HH:MM
+    if (hora[2] != ':') return false;
+    
+    for (int i = 0; i < 5; i++) {
+        if (i == 2) continue;
+        if (hora[i] < '0' || hora[i] > '9') return false;
+    }
+    
+    int hh = (hora[0]-'0')*10 + (hora[1]-'0');
+    int mm = (hora[3]-'0')*10 + (hora[4]-'0');
+    
+    if (hh < 0 || hh > 23) return false;
+    if (mm < 0 || mm > 59) return false;
+    
+    return true;
+}
 
-bool Cita::getEliminado() const { return eliminada; }
-void Cita::setEliminado(bool e) { setEliminada(e); }
+bool Cita::validarDatos() const {
+    if (pacienteID <= 0) return false;
+    if (doctorID <= 0) return false;
+    if (!validarFecha(fecha)) return false;
+    if (!validarHora(hora)) return false;
+    if (strlen(motivo) == 0) return false;
+    if (strlen(estado) == 0) return false;
+    return true;
+}
+
+// Métodos de estado
+bool Cita::estaAgendada() const {
+    return strcmp(estado, "Agendada") == 0;
+}
+
+bool Cita::estaCancelada() const {
+    return strcmp(estado, "Cancelada") == 0;
+}
+
+bool Cita::estaAtendida() const {
+    return strcmp(estado, "Atendida") == 0;
+}
+
+// Métodos de presentación
+void Cita::mostrarInformacionBasica() const {
+    std::cout << "ID: " << id << " - Paciente: " << pacienteID << " - Doctor: " << doctorID
+              << " - " << fecha << " " << hora << " - " << estado << "\n";
+}
+
+void Cita::mostrarInformacionCompleta() const {
+    std::cout << "\n=== INFORMACION COMPLETA DE LA CITA ===\n";
+    std::cout << "ID: " << id << "\n";
+    std::cout << "Paciente ID: " << pacienteID << "\n";
+    std::cout << "Doctor ID: " << doctorID << "\n";
+    std::cout << "Fecha: " << fecha << "\n";
+    std::cout << "Hora: " << hora << "\n";
+    std::cout << "Motivo: " << motivo << "\n";
+    std::cout << "Estado: " << estado << "\n";
+    std::cout << "Observaciones: " << observaciones << "\n";
+    std::cout << "Atendida: " << (atendida ? "Si" : "No") << "\n";
+    if (atendida) {
+        std::cout << "Consulta ID: " << consultaID << "\n";
+    }
+    std::cout << "Eliminada: " << (eliminado ? "Si" : "No") << "\n";
+    
+    char buffer[80];
+    struct tm* timeinfo = localtime(&fechaCreacion);
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+    std::cout << "Fecha Creacion: " << buffer << "\n";
+    
+    timeinfo = localtime(&fechaModificacion);
+    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", timeinfo);
+    std::cout << "Fecha Modificacion: " << buffer << "\n";
+}
+
+size_t Cita::obtenerTamano() {
+    return sizeof(Cita);
+}

@@ -245,18 +245,19 @@ vector<Paciente> GestorArchivos::listarPacientesActivos() {
     return pacientes;
 }
 
-// Implementaciones similares para Doctor, Cita, HistorialMedico...
-// Por brevedad, mostraré solo los prototipos y una implementación ejemplo
-
+// Operaciones para Doctores
 bool GestorArchivos::guardarDoctor(Doctor& doctor) {
-    // Implementación similar a guardarPaciente
     fstream archivo(DOCTORES_BIN, ios::binary | ios::in | ios::out);
-    if (!archivo.is_open()) return false;
+    if (!archivo.is_open()) {
+        cout << "Error: No se pudo abrir archivo de doctores\n";
+        return false;
+    }
     
     ArchivoHeader header = leerHeader(DOCTORES_BIN);
     bool esNuevo = true;
     int indiceEncontrado = -1;
     
+    // Buscar si el doctor ya existe
     for (int i = 0; i < header.cantidadRegistros; i++) {
         Doctor temp = leerDoctorPorIndice(i);
         if (temp.getId() == doctor.getId() && doctor.getId() != 0) {
@@ -267,12 +268,15 @@ bool GestorArchivos::guardarDoctor(Doctor& doctor) {
     }
     
     if (esNuevo) {
+        // NUEVO DOCTOR: Asignar ID desde el header
         doctor.setId(header.proximoID);
         doctor.setEliminado(false);
         
+        // Escribir al final del archivo
         archivo.seekp(0, ios::end);
         archivo.write((char*)&doctor, sizeof(Doctor));
         
+        // Actualizar header
         header.proximoID++;
         header.cantidadRegistros++;
         header.registrosActivos++;
@@ -280,6 +284,7 @@ bool GestorArchivos::guardarDoctor(Doctor& doctor) {
         archivo.seekp(0);
         archivo.write((char*)&header, sizeof(ArchivoHeader));
     } else {
+        // ACTUALIZAR DOCTOR EXISTENTE
         long posicion = calcularPosicion(indiceEncontrado, sizeof(Doctor));
         archivo.seekp(posicion);
         archivo.write((char*)&doctor, sizeof(Doctor));
@@ -330,6 +335,7 @@ bool GestorArchivos::eliminarDoctorLogico(int id) {
     if (doctor.getId() == -1) return false;
     
     doctor.setEliminado(true);
+    doctor.setDisponible(false);
     return guardarDoctor(doctor);
 }
 
@@ -350,12 +356,16 @@ vector<Doctor> GestorArchivos::listarDoctoresActivos() {
 // Operaciones para Citas
 bool GestorArchivos::guardarCita(Cita& cita) {
     fstream archivo(CITAS_BIN, ios::binary | ios::in | ios::out);
-    if (!archivo.is_open()) return false;
+    if (!archivo.is_open()) {
+        cout << "Error: No se pudo abrir archivo de citas\n";
+        return false;
+    }
     
     ArchivoHeader header = leerHeader(CITAS_BIN);
     bool esNueva = true;
     int indiceEncontrado = -1;
     
+    // Buscar si la cita ya existe
     for (int i = 0; i < header.cantidadRegistros; i++) {
         Cita temp = leerCitaPorIndice(i);
         if (temp.getId() == cita.getId() && cita.getId() != 0) {
@@ -366,12 +376,15 @@ bool GestorArchivos::guardarCita(Cita& cita) {
     }
     
     if (esNueva) {
+        // NUEVA CITA: Asignar ID desde el header
         cita.setId(header.proximoID);
         cita.setEliminado(false);
         
+        // Escribir al final del archivo
         archivo.seekp(0, ios::end);
         archivo.write((char*)&cita, sizeof(Cita));
         
+        // Actualizar header
         header.proximoID++;
         header.cantidadRegistros++;
         header.registrosActivos++;
@@ -379,6 +392,7 @@ bool GestorArchivos::guardarCita(Cita& cita) {
         archivo.seekp(0);
         archivo.write((char*)&header, sizeof(ArchivoHeader));
     } else {
+        // ACTUALIZAR CITA EXISTENTE
         long posicion = calcularPosicion(indiceEncontrado, sizeof(Cita));
         archivo.seekp(posicion);
         archivo.write((char*)&cita, sizeof(Cita));
@@ -429,6 +443,7 @@ bool GestorArchivos::eliminarCitaLogico(int id) {
     if (cita.getId() == -1) return false;
     
     cita.setEliminado(true);
+    cita.setEstado("Cancelada");
     return guardarCita(cita);
 }
 
@@ -449,12 +464,16 @@ vector<Cita> GestorArchivos::listarCitasActivas() {
 // Operaciones para Historial Médico
 bool GestorArchivos::guardarHistorial(HistorialMedico& historial) {
     fstream archivo(HISTORIALES_BIN, ios::binary | ios::in | ios::out);
-    if (!archivo.is_open()) return false;
+    if (!archivo.is_open()) {
+        cout << "Error: No se pudo abrir archivo de historiales\n";
+        return false;
+    }
     
     ArchivoHeader header = leerHeader(HISTORIALES_BIN);
     bool esNuevo = true;
     int indiceEncontrado = -1;
     
+    // Buscar si el historial ya existe
     for (int i = 0; i < header.cantidadRegistros; i++) {
         HistorialMedico temp = leerHistorialPorIndice(i);
         if (temp.getId() == historial.getId() && historial.getId() != 0) {
@@ -465,12 +484,15 @@ bool GestorArchivos::guardarHistorial(HistorialMedico& historial) {
     }
     
     if (esNuevo) {
+        // NUEVO HISTORIAL: Asignar ID desde el header
         historial.setId(header.proximoID);
         historial.setEliminado(false);
         
+        // Escribir al final del archivo
         archivo.seekp(0, ios::end);
         archivo.write((char*)&historial, sizeof(HistorialMedico));
         
+        // Actualizar header
         header.proximoID++;
         header.cantidadRegistros++;
         header.registrosActivos++;
@@ -478,6 +500,7 @@ bool GestorArchivos::guardarHistorial(HistorialMedico& historial) {
         archivo.seekp(0);
         archivo.write((char*)&header, sizeof(ArchivoHeader));
     } else {
+        // ACTUALIZAR HISTORIAL EXISTENTE
         long posicion = calcularPosicion(indiceEncontrado, sizeof(HistorialMedico));
         archivo.seekp(posicion);
         archivo.write((char*)&historial, sizeof(HistorialMedico));
@@ -553,6 +576,7 @@ bool GestorArchivos::compactarArchivo(const char* nombreArchivo, size_t tamRegis
     ofstream archivoTempStream(archivoTemp, ios::binary);
     
     if (!archivoOrig.is_open() || !archivoTempStream.is_open()) {
+        cout << "Error: No se pudieron abrir los archivos para compactacion\n";
         return false;
     }
     
@@ -576,8 +600,18 @@ bool GestorArchivos::compactarArchivo(const char* nombreArchivo, size_t tamRegis
         char* buffer = new char[tamRegistro];
         archivoOrig.read(buffer, tamRegistro);
         
-        // Verificar si el registro está eliminado (asumiendo que eliminado está después de id)
-        bool eliminado = *((bool*)(buffer + sizeof(int) + sizeof(time_t)));
+        // Verificar si el registro está eliminado (asumiendo que eliminado está en posición fija)
+        // Para Paciente: después de id (4 bytes) + arrays de chars + ints + bool eliminado
+        bool eliminado = false;
+        if (nombreArchivo == PACIENTES_BIN) {
+            eliminado = *((bool*)(buffer + sizeof(Paciente) - 2 * sizeof(time_t) - sizeof(bool)));
+        } else if (nombreArchivo == DOCTORES_BIN) {
+            eliminado = *((bool*)(buffer + sizeof(Doctor) - 2 * sizeof(time_t) - sizeof(bool)));
+        } else if (nombreArchivo == CITAS_BIN) {
+            eliminado = *((bool*)(buffer + sizeof(Cita) - 2 * sizeof(time_t) - sizeof(bool)));
+        } else if (nombreArchivo == HISTORIALES_BIN) {
+            eliminado = *((bool*)(buffer + sizeof(HistorialMedico) - sizeof(time_t) - sizeof(bool)));
+        }
         
         if (!eliminado) {
             archivoTempStream.write(buffer, tamRegistro);
@@ -597,12 +631,15 @@ bool GestorArchivos::compactarArchivo(const char* nombreArchivo, size_t tamRegis
     
     // Reemplazar archivo original
     if (remove(nombreArchivo) != 0) {
+        cout << "Error: No se pudo eliminar el archivo original\n";
         return false;
     }
     
     if (rename(archivoTemp.c_str(), nombreArchivo) != 0) {
+        cout << "Error: No se pudo renombrar el archivo temporal\n";
         return false;
     }
     
+    cout << "Archivo compactado: " << nuevosRegistros << " registros activos.\n";
     return true;
 }

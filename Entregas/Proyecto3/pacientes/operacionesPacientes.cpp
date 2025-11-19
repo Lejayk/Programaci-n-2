@@ -8,7 +8,18 @@ using namespace std;
 void limpiarBufferPacientes() {
     cin.ignore(256, '\n');
 }
+// En Paciente.cpp, agregar:
 
+int Paciente::getCantidadConsultas() const { return cantidadConsultas; }
+int Paciente::getPrimerConsultaID() const { return primerConsultaID; }
+void Paciente::setCantidadConsultas(int cantidad) { 
+    this->cantidadConsultas = cantidad; 
+    fechaModificacion = time(nullptr);
+}
+void Paciente::setPrimerConsultaID(int primerConsultaID) { 
+    this->primerConsultaID = primerConsultaID; 
+    fechaModificacion = time(nullptr);
+}
 void menuPacientes(Hospital& hospital) {
     int opcion;
     do {

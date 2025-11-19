@@ -11,5 +11,7 @@ void buscarPacientePorCedula();
 void modificarPaciente();
 void eliminarPaciente();
 void listarTodosPacientes();
+void buscarPacientesPorNombre();
+void verHistorialPaciente();
 
 #endif

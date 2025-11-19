@@ -16,10 +16,12 @@ void menuPacientes(Hospital& hospital) {
         cout << "1. Registrar nuevo paciente" << endl;
         cout << "2. Buscar por ID" << endl;
         cout << "3. Buscar por cedula" << endl;
-        cout << "4. Modificar datos" << endl;
-        cout << "5. Eliminar" << endl;
-        cout << "6. Listar todos" << endl;
-        cout << "7. Volver" << endl;
+        cout << "4. Buscar por nombre" << endl;
+        cout << "5. Modificar datos" << endl;
+        cout << "6. Eliminar" << endl;
+        cout << "7. Listar todos" << endl;
+        cout << "8. Ver historial medico" << endl;
+        cout << "0. Volver" << endl;
         cout << "\nOpcion: ";
         cin >> opcion;
         limpiarBufferPacientes();
@@ -35,22 +37,56 @@ void menuPacientes(Hospital& hospital) {
                 buscarPacientePorCedula();
                 break;
             case 4:
-                modificarPaciente();
+                buscarPacientesPorNombre();
                 break;
             case 5:
-                eliminarPaciente();
+                modificarPaciente();
                 break;
             case 6:
-                listarTodosPacientes();
+                eliminarPaciente();
                 break;
             case 7:
+                listarTodosPacientes();
+                break;
+            case 8:
+                verHistorialPaciente();
+                break;
+            case 0:
                 cout << "Volviendo al menu principal..." << endl;
                 break;
             default:
                 cout << "Opcion invalida" << endl;
         }
-    } while(opcion != 7);
+    } while(opcion != 0);
 }
+
+void buscarPacientesPorNombre() {
+    cout << "\n=== BUSCAR PACIENTES POR NOMBRE ===" << endl;
+    cout << "Nombre o parte del nombre: ";
+    char buffer[100];
+    cin.getline(buffer, 100);
+    string busc = buffer;
+    if (busc.empty()) return;
+    // tolower
+    for (auto &c : busc) c = tolower((unsigned char)c);
+
+    vector<Paciente> pacientes = GestorArchivos::listarPacientesActivos();
+    int encontrados = 0;
+    for (auto &p : pacientes) {
+        string nombre = string(p.getNombre()) + " " + string(p.getApellido());
+        string nombre_l = nombre;
+        for (auto &c : nombre_l) c = tolower((unsigned char)c);
+        if (nombre_l.find(busc) != string::npos) {
+            p.mostrarInformacionCompleta();
+            encontrados++;
+        }
+    }
+    cout << "Total encontrados: " << encontrados << endl;
+    system("pause");
+    system("cls");
+}
+
+// verHistorialPaciente() is defined in the historial module (operacionesHistorial.cpp)
 
 void registrarPaciente(Hospital& hospital) {
     cout << "\n=== REGISTRAR NUEVO PACIENTE ===" << endl;

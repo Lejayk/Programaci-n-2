@@ -6,6 +6,7 @@
 #include "doctores/operacionesDoctores.hpp"
 #include "citas/operacionesCitas.hpp"
 #include "historial/operacionesHistorial.hpp"
+#include "mantenimiento/operacionesMantenimiento.hpp"
 
 using namespace std;
 
@@ -41,8 +42,9 @@ void mostrarMenuPrincipal() {
     cout << "2. Gestion de Doctores" << endl;
     cout << "3. Gestion de Citas" << endl;
     cout << "4. Historial Medico" << endl;
-    cout << "5. Informacion del Hospital" << endl;
-    cout << "6. Guardar y Salir" << endl;
+    cout << "5. Mantenimiento" << endl;
+    cout << "6. Informacion del Hospital" << endl;
+    cout << "7. Guardar y Salir" << endl;
     cout << "\nOpcion: ";
 }
 
@@ -83,16 +85,19 @@ int main() {
                 menuHistorial(hospital);
                 break;
             case 5:
-                hospital.mostrarInformacion();
+                menuMantenimiento(hospital);
                 break;
             case 6:
+                hospital.mostrarInformacion();
+                break;
+            case 7:
                 GestorArchivos::guardarHospital(hospital);
                 cout << "\n✓ Datos guardados. Hasta pronto!" << endl;
                 break;
             default:
                 cout << "Opcion invalida" << endl;
         }
-    } while(opcion != 6);
+    } while(opcion != 7);
     
     return 0;
 }

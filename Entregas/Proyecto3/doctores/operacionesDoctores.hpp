@@ -15,5 +15,6 @@ void listarDoctoresPorEspecialidad();
 void asignarPacienteADoctor();
 void removerPacienteDeDoctor();
 void listarPacientesDeDoctor();
+void buscarDoctoresPorNombre();
 
 #endif

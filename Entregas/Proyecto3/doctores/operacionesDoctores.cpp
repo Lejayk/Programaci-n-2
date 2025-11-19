@@ -29,18 +29,21 @@ void limpiarBufferDoctores() {
 void menuDoctores(Hospital& hospital) {
     int opcion;
     do {
+        system("pause");
+        system("cls");
         cout << "\n=== GESTION DE DOCTORES ===" << endl;
         cout << "1. Registrar nuevo doctor" << endl;
         cout << "2. Buscar por ID" << endl;
         cout << "3. Buscar por cedula profesional" << endl;
-        cout << "4. Modificar datos" << endl;
-        cout << "5. Eliminar" << endl;
-        cout << "6. Listar todos" << endl;
-        cout << "7. Listar por especialidad" << endl;
-        cout << "8. Asignar paciente a doctor" << endl;
-        cout << "9. Remover paciente de doctor" << endl;
-        cout << "10. Listar pacientes de doctor" << endl;
-        cout << "11. Volver" << endl;
+        cout << "4. Buscar por nombre" << endl;
+        cout << "5. Modificar datos" << endl;
+        cout << "6. Eliminar" << endl;
+        cout << "7. Listar todos" << endl;
+        cout << "8. Listar por especialidad" << endl;
+        cout << "9. Asignar paciente a doctor" << endl;
+        cout << "10. Remover paciente de doctor" << endl;
+        cout << "11. Listar pacientes de doctor" << endl;
+        cout << "0. Volver" << endl;
         cout << "\nOpcion: ";
         cin >> opcion;
         limpiarBufferDoctores();
@@ -56,33 +59,38 @@ void menuDoctores(Hospital& hospital) {
                 buscarDoctorPorCedula();
                 break;
             case 4:
-                modificarDoctor();
+                buscarDoctoresPorNombre();
                 break;
             case 5:
-                eliminarDoctor();
+                modificarDoctor();
                 break;
             case 6:
-                listarTodosDoctores();
+                eliminarDoctor();
                 break;
             case 7:
-                listarDoctoresPorEspecialidad();
+                listarTodosDoctores();
                 break;
             case 8:
-                asignarPacienteADoctor();
+                listarDoctoresPorEspecialidad();
                 break;
             case 9:
-                removerPacienteDeDoctor();
+                asignarPacienteADoctor();
                 break;
             case 10:
-                listarPacientesDeDoctor();
+                removerPacienteDeDoctor();
                 break;
             case 11:
+                listarPacientesDeDoctor();
+                break;
+            case 0:
                 cout << "Volviendo al menu principal..." << endl;
+                system("pause");
+                 system("cls");
                 break;
             default:
                 cout << "Opcion invalida" << endl;
         }
-    } while(opcion != 11);
+    } while(opcion != 0);
 }
 
 void registrarDoctor(Hospital& hospital) {
@@ -101,7 +109,7 @@ void registrarDoctor(Hospital& hospital) {
     cin.getline(cedulaProfesional, 20);
     cout << "Especialidad: ";
     cin.getline(especialidad, 50);
-    cout << "Años de Experiencia: ";
+    cout << "Anios de Experiencia: ";
     cin >> aniosExperiencia;
     limpiarBufferDoctores();
     cout << "Costo de Consulta: ";
@@ -375,4 +383,29 @@ void listarPacientesDeDoctor() {
         }
     }
     cout << "Total: " << cantidad << " pacientes" << endl;
+}
+
+void buscarDoctoresPorNombre() {
+    cout << "\n=== BUSCAR DOCTORES POR NOMBRE ===" << endl;
+    cout << "Nombre o parte del nombre: ";
+    char buffer[100];
+    cin.getline(buffer, 100);
+    string busc = buffer;
+    if (busc.empty()) return;
+    for (auto &c : busc) c = tolower((unsigned char)c);
+
+    vector<Doctor> doctores = GestorArchivos::listarDoctoresActivos();
+    int encontrados = 0;
+    for (auto &d : doctores) {
+        string nombre = string(d.getNombre()) + " " + string(d.getApellido());
+        string nombre_l = nombre;
+        for (auto &c : nombre_l) c = tolower((unsigned char)c);
+        if (nombre_l.find(busc) != string::npos) {
+            d.mostrarInformacionCompleta();
+            encontrados++;
+        }
+    }
+    cout << "Total encontrados: " << encontrados << endl;
+    system("pause");
+    system("cls");
 }

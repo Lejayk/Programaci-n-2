@@ -33,6 +33,8 @@ bool verificarDisponibilidadDoctor(int idDoctor, const char* fecha, const char* 
 void menuCitas(Hospital& hospital) {
     int opcion;
     do {
+        system("pause");
+        system("cls");
         cout << "\n=== GESTION DE CITAS ===" << endl;
         cout << "1. Agendar cita" << endl;
         cout << "2. Cancelar cita" << endl;
@@ -76,13 +78,15 @@ void menuCitas(Hospital& hospital) {
             case 9:
                 modificarCita();
                 break;
-            case 10:
+            case 0:
                 cout << "Volviendo al menu principal..." << endl;
+                system("pause");
+                system("cls");  
                 break;
             default:
                 cout << "Opcion invalida" << endl;
         }
-    } while(opcion != 10);
+    } while(opcion != 0);
 }
 
 void agendarCita(Hospital& hospital) {

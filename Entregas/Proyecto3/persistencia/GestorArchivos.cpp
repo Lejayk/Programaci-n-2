@@ -31,15 +31,22 @@ long GestorArchivos::calcularPosicion(int indice, size_t tamRegistro) {
 }
 
 bool GestorArchivos::inicializarArchivo(const char* nombreArchivo) {
+    // Si el archivo ya existe, no lo truncan ni reinicializan
+    std::ifstream existe(nombreArchivo, std::ios::binary);
+    if (existe.is_open()) {
+        existe.close();
+        return true;
+    }
+
     fstream archivo(nombreArchivo, ios::binary | ios::out);
     if (!archivo.is_open()) return false;
-    
+
     ArchivoHeader header;
     header.cantidadRegistros = 0;
     header.proximoID = 1;
     header.registrosActivos = 0;
     header.version = VERSION_ARCHIVO;
-    
+
     archivo.write((char*)&header, sizeof(ArchivoHeader));
     archivo.close();
     return true;

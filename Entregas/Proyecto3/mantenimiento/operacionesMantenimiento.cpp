@@ -17,6 +17,7 @@ namespace fs = std::experimental::filesystem;
 #include <chrono>
 #include <iomanip>
 #include <cstdio>
+#include <sys/stat.h>
 
 #include "../persistencia/GestorArchivos.hpp"
 #include "../pacientes/Paciente.hpp"
@@ -205,11 +206,28 @@ void mostrarEstadisticasDetalladas() {
     ArchivoHeader dh = GestorArchivos::leerHeader("datos/doctores.bin");
     ArchivoHeader ch = GestorArchivos::leerHeader("datos/citas.bin");
     ArchivoHeader hh = GestorArchivos::leerHeader("datos/historiales.bin");
+    auto fileSizeFallback = [](const string& path) -> long long {
+        struct stat st;
+        if (stat(path.c_str(), &st) == 0) return (long long)st.st_size;
+        return -1LL;
+    };
 
-    cout << "Pacientes - registros: " << ph.cantidadRegistros << " activos: " << ph.registrosActivos << " proximoID: " << ph.proximoID << endl;
-    cout << "Doctores  - registros: " << dh.cantidadRegistros << " activos: " << dh.registrosActivos << " proximoID: " << dh.proximoID << endl;
-    cout << "Citas     - registros: " << ch.cantidadRegistros << " activos: " << ch.registrosActivos << " proximoID: " << ch.proximoID << endl;
-    cout << "Historiales- registros: " << hh.cantidadRegistros << " activos: " << hh.registrosActivos << " proximoID: " << hh.proximoID << endl;
+    auto printStats = [&](const char* path, const ArchivoHeader& h, const char* label){
+        long long size = -1;
+#if FS_AVAILABLE
+        try { size = (long long)fs::file_size(path); } catch (...) { size = fileSizeFallback(path); }
+#else
+        size = fileSizeFallback(path);
+#endif
+        cout << label << " - registros: " << h.cantidadRegistros << " activos: " << h.registrosActivos << " proximoID: " << h.proximoID;
+        if (size >= 0) cout << " | tamano(bytes): " << size;
+        cout << endl;
+    };
+
+    printStats("datos/pacientes.bin", ph, "Pacientes");
+    printStats("datos/doctores.bin", dh, "Doctores ");
+    printStats("datos/citas.bin", ch, "Citas    ");
+    printStats("datos/historiales.bin", hh, "Historiales");
 }
 
 void verificarSistemaArchivos() {

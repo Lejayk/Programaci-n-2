@@ -9,6 +9,7 @@
 
 using namespace std;
 
+#if 0 // Archivo legado deshabilitado: contiene definiciones duplicadas (main, funciones) que interfieren con la version modular
 // Prototipos usados antes de su definicion
 bool validarFecha(const char* fecha);
 bool validarHora(const char* hora);
@@ -1499,9 +1500,21 @@ void buscarDoctoresPorEspecialidad(const char* especialidad) {
     cout << "\nDoctores de " << especialidad << ":\n";
     cout << string(60, '-') << endl;
     
+    auto strcase_cmp_local = [](const char* a, const char* b) {
+        if (!a) return (b ? -1 : 0);
+        if (!b) return 1;
+        while (*a && *b) {
+            unsigned char ca = (unsigned char)tolower((unsigned char)*a);
+            unsigned char cb = (unsigned char)tolower((unsigned char)*b);
+            if (ca != cb) return ca - cb;
+            ++a; ++b;
+        }
+        return (unsigned char)tolower((unsigned char)*a) - (unsigned char)tolower((unsigned char)*b);
+    };
+
     for (int i = 0; i < header.cantidadRegistros; i++) {
         Doctor d = leerDoctorPorIndice(i);
-        if (!d.eliminado && strcasecmp(d.especialidad, especialidad) == 0 && contador < MAX_RESULTADOS_BUSQUEDA) {
+        if (!d.eliminado && strcase_cmp_local(d.especialidad, especialidad) == 0 && contador < MAX_RESULTADOS_BUSQUEDA) {
             cout << "ID: " << d.id << " - " << d.nombre << " " << d.apellido << "\n";
             cout << "  Anos experiencia: " << d.aniosExperiencia << "  Costo: " << d.costoConsulta << "\n";
             cout << "  Telefono: " << d.telefono << "  Horario: " << d.horarioAtencion << "\n";
@@ -3021,3 +3034,5 @@ int main() {
     cout << "Sistema cerrado correctamente.\n";
     return 0;
 }
+
+#endif // Archivo legado deshabilitado

@@ -222,7 +222,7 @@ void HistorialMedico::mostrarInformacionBasica() const {
 }
 
 void HistorialMedico::mostrarInformacionCompleta() const {
-    std::cout << "\n=== INFORMACION COMPLETA DE CONSULTA ===" << endl;
+    std::cout << "\n=== INFORMACION COMPLETA DE CONSULTA ===" << std::endl;
     std::cout << "ID: " << id << "\n";
     std::cout << "Paciente ID: " << pacienteID << "\n";
     std::cout << "Doctor ID: " << doctorID << "\n";

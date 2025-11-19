@@ -7,6 +7,7 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
+#include <iomanip>
 
 using namespace std;
 
@@ -261,7 +262,7 @@ void verHistorialPaciente() {
         cout << "Diagnostico: " << consulta.getDiagnostico() << endl;
         cout << "Tratamiento: " << consulta.getTratamiento() << endl;
         cout << "Medicamentos: " << consulta.getMedicamentos() << endl;
-        cout << "Costo: $" << fixed << setprecision(2) << consulta.getCosto() << endl;
+        cout << "Costo: $" << std::fixed << std::setprecision(2) << consulta.getCosto() << std::endl;
         cout << "-----------------------" << endl;
         
         consultaID = consulta.getSiguienteConsultaID();

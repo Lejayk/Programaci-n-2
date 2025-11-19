@@ -33,10 +33,10 @@ int leerEntero() {
 }
 
 void mostrarMenuPrincipal() {
-    cout << "\n╔════════════════════════════════════════╗" << endl;
-    cout << "║   SISTEMA DE GESTION HOSPITALARIA v3   ║" << endl;
-    cout << "║      (POO y Modularizacion)            ║" << endl;
-    cout << "╚════════════════════════════════════════╝" << endl;
+    cout << "\n========================================" << endl;
+    cout << "=   SISTEMA DE GESTION HOSPITALARIA v3   =" << endl;
+    cout << "=      (POO y Modularizacion)           =" << endl;
+    cout << "========================================" << endl;
     cout << "\n1. Gestion de Pacientes" << endl;
     cout << "2. Gestion de Doctores" << endl;
     cout << "3. Gestion de Citas" << endl;

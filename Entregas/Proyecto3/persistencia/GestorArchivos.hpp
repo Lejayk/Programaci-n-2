@@ -64,7 +64,7 @@ public:
     static bool eliminarCitaLogico(int id);
     static std::vector<Cita> listarCitasActivas();
     
-    // Operaciones para Historial Médico
+    // Operaciones para Historial Medico
     static bool guardarHistorial(HistorialMedico& historial);
     static HistorialMedico leerHistorialPorIndice(int indice);
     static HistorialMedico buscarHistorialPorID(int id);

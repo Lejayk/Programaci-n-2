@@ -22,6 +22,9 @@ Paciente::Paciente() {
     cantidadCitas = 0;
     for (int i = 0; i < 20; i++) citasID[i] = -1;
 
+    cantidadConsultas = 0;
+    primerConsultaID = -1;
+
     fechaCreacion = time(nullptr);
     fechaModificacion = fechaCreacion;
 }
@@ -52,6 +55,19 @@ const char* Paciente::getObservaciones() const { return observaciones; }
 
 int Paciente::getCantidadCitas() const { return cantidadCitas; }
 const int* Paciente::getCitasID() const { return citasID; }
+
+int Paciente::getCantidadConsultas() const { return cantidadConsultas; }
+int Paciente::getPrimerConsultaID() const { return primerConsultaID; }
+
+void Paciente::setCantidadConsultas(int cantidad) {
+    this->cantidadConsultas = cantidad;
+    fechaModificacion = time(nullptr);
+}
+
+void Paciente::setPrimerConsultaID(int primerConsultaID) {
+    this->primerConsultaID = primerConsultaID;
+    fechaModificacion = time(nullptr);
+}
 
 bool Paciente::getEliminado() const { return eliminado; }
 time_t Paciente::getFechaCreacion() const { return fechaCreacion; }

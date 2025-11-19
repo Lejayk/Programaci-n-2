@@ -2,6 +2,8 @@
 #include <iostream>
 #include <cstring>
 #include <vector>
+#include <cerrno>
+#include <cstdio>
 #ifdef _WIN32
     #include <direct.h>
     #define CREAR_DIRECTORIO _mkdir
@@ -15,9 +17,12 @@ using namespace std;
 // Métodos auxiliares privados
 bool GestorArchivos::crearDirectorioDatos() {
     #ifdef _WIN32
-        return CREAR_DIRECTORIO("datos") == 0 || GetLastError() == ERROR_ALREADY_EXISTS;
+        int res = CREAR_DIRECTORIO("datos");
+        if (res == 0) return true;
+        return errno == EEXIST;
     #else
-        return CREAR_DIRECTORIO("datos", 0755) == 0 || errno == EEXIST;
+        if (CREAR_DIRECTORIO("datos", 0755) == 0) return true;
+        return errno == EEXIST;
     #endif
 }
 
@@ -571,75 +576,81 @@ vector<HistorialMedico> GestorArchivos::listarHistorialesActivos() {
 // Mantenimiento
 bool GestorArchivos::compactarArchivo(const char* nombreArchivo, size_t tamRegistro) {
     string archivoTemp = string(nombreArchivo) + ".tmp";
-    
-    ifstream archivoOrig(nombreArchivo, ios::binary);
     ofstream archivoTempStream(archivoTemp, ios::binary);
-    
-    if (!archivoOrig.is_open() || !archivoTempStream.is_open()) {
-        cout << "Error: No se pudieron abrir los archivos para compactacion\n";
+    if (!archivoTempStream.is_open()) {
+        cout << "Error: No se pudo crear archivo temporal para compactacion\n";
         return false;
     }
-    
-    // Leer header original
-    ArchivoHeader headerOrig;
-    archivoOrig.read((char*)&headerOrig, sizeof(ArchivoHeader));
-    
-    // Preparar nuevo header
+
+    // Escribir header provisional
     ArchivoHeader headerNuevo;
     headerNuevo.cantidadRegistros = 0;
-    headerNuevo.proximoID = headerOrig.proximoID;
+    headerNuevo.proximoID = 0;
     headerNuevo.registrosActivos = 0;
-    headerNuevo.version = headerOrig.version;
-    
-    // Escribir header temporal
+    headerNuevo.version = VERSION_ARCHIVO;
     archivoTempStream.write((char*)&headerNuevo, sizeof(ArchivoHeader));
-    
-    // Procesar registros
+
+    ArchivoHeader headerOrig = leerHeader(nombreArchivo);
     int nuevosRegistros = 0;
-    for (int i = 0; i < headerOrig.cantidadRegistros; i++) {
-        char* buffer = new char[tamRegistro];
-        archivoOrig.read(buffer, tamRegistro);
-        
-        // Verificar si el registro está eliminado (asumiendo que eliminado está en posición fija)
-        // Para Paciente: después de id (4 bytes) + arrays de chars + ints + bool eliminado
-        bool eliminado = false;
-        if (nombreArchivo == PACIENTES_BIN) {
-            eliminado = *((bool*)(buffer + sizeof(Paciente) - 2 * sizeof(time_t) - sizeof(bool)));
-        } else if (nombreArchivo == DOCTORES_BIN) {
-            eliminado = *((bool*)(buffer + sizeof(Doctor) - 2 * sizeof(time_t) - sizeof(bool)));
-        } else if (nombreArchivo == CITAS_BIN) {
-            eliminado = *((bool*)(buffer + sizeof(Cita) - 2 * sizeof(time_t) - sizeof(bool)));
-        } else if (nombreArchivo == HISTORIALES_BIN) {
-            eliminado = *((bool*)(buffer + sizeof(HistorialMedico) - sizeof(time_t) - sizeof(bool)));
+
+    if (strcmp(nombreArchivo, PACIENTES_BIN) == 0) {
+        for (int i = 0; i < headerOrig.cantidadRegistros; i++) {
+            Paciente p = leerPacientePorIndice(i);
+            if (p.getId() != -1 && !p.getEliminado()) {
+                archivoTempStream.write((char*)&p, sizeof(Paciente));
+                nuevosRegistros++;
+            }
         }
-        
-        if (!eliminado) {
-            archivoTempStream.write(buffer, tamRegistro);
-            nuevosRegistros++;
+    } else if (strcmp(nombreArchivo, DOCTORES_BIN) == 0) {
+        for (int i = 0; i < headerOrig.cantidadRegistros; i++) {
+            Doctor d = leerDoctorPorIndice(i);
+            if (d.getId() != -1 && !d.getEliminado()) {
+                archivoTempStream.write((char*)&d, sizeof(Doctor));
+                nuevosRegistros++;
+            }
         }
-        delete[] buffer;
+    } else if (strcmp(nombreArchivo, CITAS_BIN) == 0) {
+        for (int i = 0; i < headerOrig.cantidadRegistros; i++) {
+            Cita c = leerCitaPorIndice(i);
+            if (c.getId() != -1 && !c.getEliminado()) {
+                archivoTempStream.write((char*)&c, sizeof(Cita));
+                nuevosRegistros++;
+            }
+        }
+    } else if (strcmp(nombreArchivo, HISTORIALES_BIN) == 0) {
+        for (int i = 0; i < headerOrig.cantidadRegistros; i++) {
+            HistorialMedico h = leerHistorialPorIndice(i);
+            if (h.getId() != -1 && !h.getEliminado()) {
+                archivoTempStream.write((char*)&h, sizeof(HistorialMedico));
+                nuevosRegistros++;
+            }
+        }
+    } else {
+        archivoTempStream.close();
+        remove(archivoTemp.c_str());
+        cout << "Error: nombre de archivo no reconocido para compactacion\n";
+        return false;
     }
-    
+
     // Actualizar header del archivo temporal
     headerNuevo.cantidadRegistros = nuevosRegistros;
     headerNuevo.registrosActivos = nuevosRegistros;
+    headerNuevo.proximoID = headerOrig.proximoID;
+    headerNuevo.version = headerOrig.version;
     archivoTempStream.seekp(0);
     archivoTempStream.write((char*)&headerNuevo, sizeof(ArchivoHeader));
-    
-    archivoOrig.close();
     archivoTempStream.close();
-    
+
     // Reemplazar archivo original
     if (remove(nombreArchivo) != 0) {
-        cout << "Error: No se pudo eliminar el archivo original\n";
-        return false;
+        // si no se pudo eliminar, intentar renombrar de todas formas
     }
-    
     if (rename(archivoTemp.c_str(), nombreArchivo) != 0) {
         cout << "Error: No se pudo renombrar el archivo temporal\n";
+        remove(archivoTemp.c_str());
         return false;
     }
-    
+
     cout << "Archivo compactado: " << nuevosRegistros << " registros activos.\n";
     return true;
 }

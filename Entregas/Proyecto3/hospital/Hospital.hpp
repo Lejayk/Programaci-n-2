@@ -36,6 +36,12 @@ public:
     int getTotalDoctoresRegistrados() const;
     int getTotalCitasAgendadas() const;
     int getTotalConsultasRealizadas() const;
+
+    // Compatibilidad: alias de getters (nombres antiguos)
+    int getTotalPacientes() const;
+    int getTotalDoctores() const;
+    int getTotalCitas() const;
+    int getTotalHistorial() const;
     
     // Setters
     void setNombre(const char* nombre);

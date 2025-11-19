@@ -22,6 +22,10 @@ private:
     int cantidadCitas;
     int citasID[20];
 
+    // Contador de consultas e indice a la primera consulta (lista enlazada)
+    int cantidadConsultas;
+    int primerConsultaID;
+
     bool eliminado;
     time_t fechaCreacion;
     time_t fechaModificacion;
@@ -83,6 +87,12 @@ public:
 
     // Para persistencia
     static size_t obtenerTamano();
+
+    // Accesores para historial de consultas
+    int getCantidadConsultas() const;
+    int getPrimerConsultaID() const;
+    void setCantidadConsultas(int cantidad);
+    void setPrimerConsultaID(int primerConsultaID);
 };
 
 #endif

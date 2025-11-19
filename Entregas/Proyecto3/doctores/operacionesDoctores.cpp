@@ -5,6 +5,20 @@
 #include <cstring>
 #include <vector>
 #include <algorithm>
+#include <cctype>
+
+// Comparacion case-insensitive portable
+static int strcase_cmp(const char* a, const char* b) {
+    if (!a) return (b ? -1 : 0);
+    if (!b) return 1;
+    while (*a && *b) {
+        unsigned char ca = (unsigned char)std::tolower((unsigned char)*a);
+        unsigned char cb = (unsigned char)std::tolower((unsigned char)*b);
+        if (ca != cb) return ca - cb;
+        ++a; ++b;
+    }
+    return (unsigned char)std::tolower((unsigned char)*a) - (unsigned char)std::tolower((unsigned char)*b);
+}
 
 using namespace std;
 
@@ -258,7 +272,7 @@ void listarDoctoresPorEspecialidad() {
     
     cout << "\nDoctores de " << especialidad << ":" << endl;
     for (const auto& doctor : doctores) {
-        if (strcasecmp(doctor.getEspecialidad(), especialidad) == 0) {
+        if (strcase_cmp(doctor.getEspecialidad(), especialidad) == 0) {
             doctor.mostrarInformacionBasica();
             contador++;
         }

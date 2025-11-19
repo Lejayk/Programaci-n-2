@@ -106,3 +106,9 @@ void Hospital::mostrarInformacion() const {
 size_t Hospital::obtenerTamano() {
     return sizeof(Hospital);
 }
+
+// Compatibilidad: alias de getters (nombres antiguos)
+int Hospital::getTotalPacientes() const { return totalPacientesRegistrados; }
+int Hospital::getTotalDoctores() const { return totalDoctoresRegistrados; }
+int Hospital::getTotalCitas() const { return totalCitasAgendadas; }
+int Hospital::getTotalHistorial() const { return totalConsultasRealizadas; }

@@ -263,10 +263,16 @@ void listarTodosDoctores() {
         return;
     }
     
-    for (const auto& doctor : doctores) {
-        doctor.mostrarInformacionBasica();
+    cout << string(60, '-') << endl;
+    int contador = 0;
+    for (const auto& d : doctores) {
+        cout << "ID: " << d.getId() << " - " << d.getNombre() << " " << d.getApellido() << "\n";
+        cout << "  Cedula: " << d.getCedulaProfesional() << "  Especialidad: " << d.getEspecialidad() << "\n";
+        cout << "  Telefono: " << d.getTelefono() << "  Email: " << d.getEmail() << "\n";
+        cout << string(60, '-') << endl;
+        contador++;
     }
-    cout << "Total: " << doctores.size() << " doctores" << endl;
+    cout << "Total: " << contador << " doctores" << endl;
 }
 
 void listarDoctoresPorEspecialidad() {
@@ -386,26 +392,49 @@ void listarPacientesDeDoctor() {
 }
 
 void buscarDoctoresPorNombre() {
-    cout << "\n=== BUSCAR DOCTORES POR NOMBRE ===" << endl;
+    cout << "\nResultados de busqueda:\n";
+    cout << string(60, '-') << endl;
     cout << "Nombre o parte del nombre: ";
     char buffer[100];
     cin.getline(buffer, 100);
     string busc = buffer;
-    if (busc.empty()) return;
+    if (busc.empty()) {
+        cout << "Operacion cancelada." << endl;
+        return;
+    }
     for (auto &c : busc) c = tolower((unsigned char)c);
 
     vector<Doctor> doctores = GestorArchivos::listarDoctoresActivos();
-    int encontrados = 0;
-    for (auto &d : doctores) {
-        string nombre = string(d.getNombre()) + " " + string(d.getApellido());
+    int contador = 0;
+    for (const auto &d : doctores) {
+        string nombre = string(d.getNombre());
+        string apellido = string(d.getApellido());
         string nombre_l = nombre;
+        string apellido_l = apellido;
         for (auto &c : nombre_l) c = tolower((unsigned char)c);
-        if (nombre_l.find(busc) != string::npos) {
-            d.mostrarInformacionCompleta();
-            encontrados++;
+        for (auto &c : apellido_l) c = tolower((unsigned char)c);
+
+        bool coincide = (nombre_l.find(busc) != string::npos) || (apellido_l.find(busc) != string::npos);
+        if (!coincide) {
+            string completo = nombre + " " + apellido;
+            for (auto &c : completo) c = tolower((unsigned char)c);
+            if (completo.find(busc) != string::npos) coincide = true;
+        }
+
+        if (coincide && contador < 100) {
+            cout << "ID: " << d.getId() << " - " << d.getNombre() << " " << d.getApellido() << "\n";
+            cout << "  Cedula: " << d.getCedulaProfesional() << "  Especialidad: " << d.getEspecialidad() << "\n";
+            cout << "  Telefono: " << d.getTelefono() << "  Email: " << d.getEmail() << "\n";
+            cout << string(60, '-') << endl;
+            contador++;
         }
     }
-    cout << "Total encontrados: " << encontrados << endl;
+
+    if (contador == 0) {
+        cout << "No se encontraron doctores con ese nombre." << endl;
+    } else {
+        cout << "Total encontrados: " << contador << endl;
+    }
     system("pause");
     system("cls");
 }

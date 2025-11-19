@@ -12,6 +12,8 @@ void limpiarBufferPacientes() {
 void menuPacientes(Hospital& hospital) {
     int opcion;
     do {
+        system("pause");
+        system("cls");
         cout << "\n=== GESTION DE PACIENTES ===" << endl;
         cout << "1. Registrar nuevo paciente" << endl;
         cout << "2. Buscar por ID" << endl;
@@ -53,6 +55,8 @@ void menuPacientes(Hospital& hospital) {
                 break;
             case 0:
                 cout << "Volviendo al menu principal..." << endl;
+                system("pause");
+                system("cls");
                 break;
             default:
                 cout << "Opcion invalida" << endl;
@@ -61,27 +65,50 @@ void menuPacientes(Hospital& hospital) {
 }
 
 void buscarPacientesPorNombre() {
-    cout << "\n=== BUSCAR PACIENTES POR NOMBRE ===" << endl;
+    cout << "\nResultados de busqueda:\n";
+    cout << string(60, '-') << endl;
     cout << "Nombre o parte del nombre: ";
     char buffer[100];
     cin.getline(buffer, 100);
     string busc = buffer;
-    if (busc.empty()) return;
-    // tolower
+    if (busc.empty()) {
+        cout << "Operacion cancelada." << endl;
+        return;
+    }
+    // tolower search
     for (auto &c : busc) c = tolower((unsigned char)c);
 
     vector<Paciente> pacientes = GestorArchivos::listarPacientesActivos();
-    int encontrados = 0;
-    for (auto &p : pacientes) {
-        string nombre = string(p.getNombre()) + " " + string(p.getApellido());
+    int contador = 0;
+    for (const auto &p : pacientes) {
+        string nombre = string(p.getNombre());
+        string apellido = string(p.getApellido());
         string nombre_l = nombre;
+        string apellido_l = apellido;
         for (auto &c : nombre_l) c = tolower((unsigned char)c);
-        if (nombre_l.find(busc) != string::npos) {
-            p.mostrarInformacionCompleta();
-            encontrados++;
+        for (auto &c : apellido_l) c = tolower((unsigned char)c);
+
+        bool coincide = (nombre_l.find(busc) != string::npos) || (apellido_l.find(busc) != string::npos);
+        if (!coincide) {
+            string completo = nombre + " " + apellido;
+            for (auto &c : completo) c = tolower((unsigned char)c);
+            if (completo.find(busc) != string::npos) coincide = true;
+        }
+
+        if (coincide && contador < 100) {
+            cout << "ID: " << p.getId() << " - " << p.getNombre() << " " << p.getApellido() << "\n";
+            cout << "  Cedula: " << p.getCedula() << "  Edad: " << p.getEdad() << "  Sexo: " << p.getSexo() << "\n";
+            cout << "  Telefono: " << p.getTelefono() << "  Email: " << p.getEmail() << "\n";
+            cout << string(60, '-') << endl;
+            contador++;
         }
     }
-    cout << "Total encontrados: " << encontrados << endl;
+
+    if (contador == 0) {
+        cout << "No se encontraron pacientes con ese nombre." << endl;
+    } else {
+        cout << "Total encontrados: " << contador << endl;
+    }
     system("pause");
     system("cls");
 }
@@ -238,16 +265,20 @@ void eliminarPaciente() {
 }
 
 void listarTodosPacientes() {
-    cout << "\n=== LISTA DE PACIENTES ===" << endl;
+    cout << "\nResultados de busqueda:\n";
+    cout << string(60, '-') << endl;
     vector<Paciente> pacientes = GestorArchivos::listarPacientesActivos();
-    
     if (pacientes.empty()) {
         cout << "No hay pacientes registrados." << endl;
         return;
     }
-    
-    for (const auto& paciente : pacientes) {
-        paciente.mostrarInformacionBasica();
+    int contador = 0;
+    for (const auto& p : pacientes) {
+        cout << "ID: " << p.getId() << " - " << p.getNombre() << " " << p.getApellido() << "\n";
+        cout << "  Cedula: " << p.getCedula() << "  Edad: " << p.getEdad() << "  Sexo: " << p.getSexo() << "\n";
+        cout << "  Telefono: " << p.getTelefono() << "  Email: " << p.getEmail() << "\n";
+        cout << string(60, '-') << endl;
+        contador++;
     }
-    cout << "Total: " << pacientes.size() << " pacientes" << endl;
+    cout << "Total: " << contador << " pacientes" << endl;
 }

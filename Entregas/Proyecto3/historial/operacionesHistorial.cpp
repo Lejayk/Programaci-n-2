@@ -42,6 +42,8 @@ HistorialMedico buscarUltimaConsultaPaciente(int pacienteID) {
 void menuHistorial(Hospital& hospital) {
     int opcion;
     do {
+        system("pause");
+        system("cls");
         cout << "\n=== HISTORIAL MEDICO ===" << endl;
         cout << "1. Registrar nueva consulta" << endl;
         cout << "2. Ver historial de paciente" << endl;
@@ -49,7 +51,7 @@ void menuHistorial(Hospital& hospital) {
         cout << "4. Listar todas las consultas" << endl;
         cout << "5. Eliminar consulta" << endl;
         cout << "6. Reparar lista de historial" << endl;
-        cout << "7. Volver" << endl;
+        cout << "0. Volver" << endl;
         cout << "\nOpcion: ";
         cin >> opcion;
         limpiarBufferHistorial();
@@ -73,13 +75,13 @@ void menuHistorial(Hospital& hospital) {
             case 6:
                 repararListaHistorial();
                 break;
-            case 7:
+            case 0:
                 cout << "Volviendo al menu principal..." << endl;
                 break;
             default:
                 cout << "Opcion invalida" << endl;
         }
-    } while(opcion != 7);
+    } while(opcion != 0);
 }
 
 void registrarConsulta(Hospital& hospital) {

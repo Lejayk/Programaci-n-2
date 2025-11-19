@@ -45,7 +45,7 @@ void menuCitas(Hospital& hospital) {
         cout << "7. Listar por fecha" << endl;
         cout << "8. Listar citas pendientes" << endl;
         cout << "9. Modificar cita" << endl;
-        cout << "10. Volver" << endl;
+        cout << "0. Volver" << endl;
         cout << "\nOpcion: ";
         cin >> opcion;
         limpiarBufferCitas();

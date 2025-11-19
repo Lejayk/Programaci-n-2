@@ -98,11 +98,37 @@ void Paciente::setApellido(const char* ape) {
 }
 
 void Paciente::setCedula(const char* c) {
-    if (!c || strlen(c) < 5) {
+    // Validacion basada en SistemaDeGestionHospitalario2.cpp::validarCedula
+    if (!c) {
         std::cout << "Error: Cedula invalida\n";
         return;
     }
+    int len = (int)strlen(c);
+    if (len == 0 || len > (int)sizeof(cedula)-1) {
+        std::cout << "Error: Cedula invalida\n";
+        return;
+    }
+    if (len < 3) {
+        std::cout << "Error: Cedula invalida\n";
+        return;
+    }
+    if (c[1] != '-') {
+        std::cout << "Error: Formato de cedula invalido. Use V-12345678\n";
+        return;
+    }
+    for (int i = 2; i < len; i++) {
+        if (!isdigit((unsigned char)c[i])) {
+            std::cout << "Error: Formato de cedula invalido. Los caracteres despues del guion deben ser numeros\n";
+            return;
+        }
+    }
+    char primera = c[0];
+    if (primera != 'V' && primera != 'v' && primera != 'E' && primera != 'e') {
+        std::cout << "Error: Cedula debe comenzar con V o E\n";
+        return;
+    }
     strncpy(cedula, c, sizeof(cedula)-1);
+    cedula[sizeof(cedula)-1] = '\0';
     fechaModificacion = time(nullptr);
 }
 
@@ -140,20 +166,90 @@ void Paciente::setTipoSangre(const char* t) {
 }
 
 void Paciente::setTelefono(const char* tel) {
-    if (!tel || strlen(tel) < 7) {
+    if (!tel) {
         std::cout << "Error: Telefono invalido\n";
         return;
     }
+    if (strlen(tel) >= sizeof(telefono)) {
+        std::cout << "Error: El telefono es demasiado largo\n";
+        return;
+    }
+    // Requerir al menos 7 digitos numericos (ignorar separadores)
+    int digitCount = 0;
+    for (int i = 0; tel[i] != '\0'; i++) if (isdigit((unsigned char)tel[i])) digitCount++;
+    if (digitCount < 7) {
+        std::cout << "Error: El telefono debe contener al menos 7 digitos\n";
+        return;
+    }
     strncpy(telefono, tel, sizeof(telefono)-1);
+    telefono[sizeof(telefono)-1] = '\0';
     fechaModificacion = time(nullptr);
 }
 
 void Paciente::setEmail(const char* mail) {
-    if (!mail || strchr(mail, '@') == nullptr) {
+    // Validacion basada en SistemaDeGestionHospitalario2.cpp::validarEmail
+    if (!mail || strlen(mail) == 0) {
         std::cout << "Error: Email invalido\n";
         return;
     }
+    if (strlen(mail) > (sizeof(email)-1)) {
+        std::cout << "Error: Email invalido (longitud)\n";
+        return;
+    }
+    const char* at = strchr(mail, '@');
+    if (!at) {
+        std::cout << "Error: Email invalido\n";
+        return;
+    }
+    if (strchr(at + 1, '@')) {
+        std::cout << "Error: Email invalido\n";
+        return;
+    }
+    if (at == mail) {
+        std::cout << "Error: Email invalido\n";
+        return;
+    }
+    if (*(at + 1) == '\0') {
+        std::cout << "Error: Email invalido\n";
+        return;
+    }
+    const char* dot = strchr(at, '.');
+    if (!dot) {
+        std::cout << "Error: Email invalido\n";
+        return;
+    }
+    if (dot == at + 1) {
+        std::cout << "Error: Email invalido\n";
+        return;
+    }
+    const char* lastDot = strrchr(mail, '.');
+    if (!lastDot || strlen(lastDot) <= 1) {
+        std::cout << "Error: Email invalido\n";
+        return;
+    }
+    if (strlen(lastDot) < 3) {
+        std::cout << "Error: Email invalido\n";
+        return;
+    }
+    for (const char* p = mail; p < at; p++) {
+        if (!isalnum((unsigned char)*p) && *p != '.' && *p != '_' && *p != '-' && *p != '+') {
+            std::cout << "Error: Email invalido\n";
+            return;
+        }
+    }
+    if (mail[0] == '.' || *(at - 1) == '.') {
+        std::cout << "Error: Email invalido\n";
+        return;
+    }
+    for (const char* p = at + 1; *p; p++) {
+        if (!isalnum((unsigned char)*p) && *p != '.' && *p != '-') {
+            std::cout << "Error: Email invalido\n";
+            return;
+        }
+    }
+
     strncpy(email, mail, sizeof(email)-1);
+    email[sizeof(email)-1] = '\0';
     fechaModificacion = time(nullptr);
 }
 

@@ -16,7 +16,7 @@ Permite administrar **Pacientes, Doctores, Citas e Historial Médico**, con pers
 - Validaciones según los requerimientos del Proyecto 2.
 - Persistencia mediante **archivos binarios** (`*.dat`).
 - Eliminación lógica.
-- Arquitectura basada en:
+- Arquitectura basada en: 
   - Clases responsables y encapsuladas
   - Módulos separados
   - Vectores dinámicos (`std::vector`)
@@ -111,4 +111,4 @@ Proyecto3/
 ### ✔️ Compilar
 En PowerShell o terminal:
 
-### De preferencia usar el ejecutable ya ajunto en la carpeta! Encarecidamente, Leandro
+### De preferencia usar el ejecutable ya ajunto en la carpeta! Encarecidamente, Leandro.

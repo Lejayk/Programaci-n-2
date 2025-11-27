@@ -122,13 +122,4 @@ g++ -std=c++17 -O2 -I. -o SistemaHospital.exe main.cpp hospital/Hospital.cpp pac
 
 ---
 
-## 🧪 Datos de Prueba (Seed)
 
-El proyecto incluye un generador de datos de prueba para poblar el sistema rápidamente.
-
-**Compilar y ejecutar seed:**
-```powershell
-g++ -std=c++17 -O2 -I. -o tests/seed_data.exe tests/seed_data.cpp persistencia/GestorArchivos.cpp pacientes/Paciente.cpp doctores/Doctor.cpp citas/Cita.cpp historial/HistorialMedico.cpp hospital/Hospital.cpp utilidades/Validaciones.cpp utilidades/Formatos.cpp
-
-.\tests\seed_data.exe
-```

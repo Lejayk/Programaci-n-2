@@ -1,6 +1,7 @@
 #include "operacionesDoctores.hpp"
 #include "../persistencia/GestorArchivos.hpp"
 #include "../pacientes/Paciente.hpp"
+#include "../utilidades/Formatos.hpp"
 #include <iostream>
 #include <cstring>
 #include <vector>
@@ -22,10 +23,6 @@ static int strcase_cmp(const char* a, const char* b) {
 
 using namespace std;
 
-void limpiarBufferDoctores() {
-    cin.ignore(256, '\n');
-}
-
 void menuDoctores(Hospital& hospital) {
     int opcion;
     do {
@@ -45,8 +42,7 @@ void menuDoctores(Hospital& hospital) {
         cout << "11. Listar pacientes de doctor" << endl;
         cout << "0. Volver" << endl;
         cout << "\nOpcion: ";
-        cin >> opcion;
-        limpiarBufferDoctores();
+        opcion = Formatos::leerEntero();
         
         switch(opcion) {
             case 1:
@@ -102,25 +98,23 @@ void registrarDoctor(Hospital& hospital) {
     char horarioAtencion[50], telefono[20], email[50];
     
     cout << "Nombre: ";
-    cin.getline(nombre, 50);
+    Formatos::leerLinea(nombre, 50);
     cout << "Apellido: ";
-    cin.getline(apellido, 50);
+    Formatos::leerLinea(apellido, 50);
     cout << "Cedula Profesional: ";
-    cin.getline(cedulaProfesional, 20);
+    Formatos::leerLinea(cedulaProfesional, 20);
     cout << "Especialidad: ";
-    cin.getline(especialidad, 50);
+    Formatos::leerLinea(especialidad, 50);
     cout << "Anios de Experiencia: ";
-    cin >> aniosExperiencia;
-    limpiarBufferDoctores();
+    aniosExperiencia = Formatos::leerEntero();
     cout << "Costo de Consulta: ";
-    cin >> costoConsulta;
-    limpiarBufferDoctores();
+    costoConsulta = Formatos::leerFloat();
     cout << "Horario de Atencion: ";
-    cin.getline(horarioAtencion, 50);
+    Formatos::leerLinea(horarioAtencion, 50);
     cout << "Telefono: ";
-    cin.getline(telefono, 20);
+    Formatos::leerLinea(telefono, 20);
     cout << "Email: ";
-    cin.getline(email, 50);
+    Formatos::leerLinea(email, 50);
     
     Doctor doctor(nombre, apellido, cedulaProfesional, especialidad);
     doctor.setAniosExperiencia(aniosExperiencia);
@@ -146,9 +140,7 @@ void registrarDoctor(Hospital& hospital) {
 void buscarDoctorPorID() {
     cout << "\n=== BUSCAR DOCTOR POR ID ===" << endl;
     cout << "ID del doctor: ";
-    int id;
-    cin >> id;
-    limpiarBufferDoctores();
+    int id = Formatos::leerEntero();
     
     Doctor doctor = GestorArchivos::buscarDoctorPorID(id);
     if (doctor.getId() != -1) {
@@ -162,7 +154,7 @@ void buscarDoctorPorCedula() {
     cout << "\n=== BUSCAR DOCTOR POR CEDULA PROFESIONAL ===" << endl;
     char cedula[20];
     cout << "Cedula Profesional: ";
-    cin.getline(cedula, 20);
+    Formatos::leerLinea(cedula, 20);
     
     // Buscar en todos los doctores
     vector<Doctor> doctores = GestorArchivos::listarDoctoresActivos();
@@ -183,9 +175,7 @@ void buscarDoctorPorCedula() {
 void modificarDoctor() {
     cout << "\n=== MODIFICAR DOCTOR ===" << endl;
     cout << "ID del doctor a modificar: ";
-    int id;
-    cin >> id;
-    limpiarBufferDoctores();
+    int id = Formatos::leerEntero();
     
     Doctor doctor = GestorArchivos::buscarDoctorPorID(id);
     if (doctor.getId() == -1) {
@@ -200,35 +190,34 @@ void modificarDoctor() {
     cout << "\nDeje en blanco para no cambiar." << endl;
     
     cout << "Nuevo nombre (" << doctor.getNombre() << "): ";
-    cin.getline(buffer, 50);
+    Formatos::leerLinea(buffer, 50);
     if (strlen(buffer) > 0) doctor.setNombre(buffer);
     
     cout << "Nuevo apellido (" << doctor.getApellido() << "): ";
-    cin.getline(buffer, 50);
+    Formatos::leerLinea(buffer, 50);
     if (strlen(buffer) > 0) doctor.setApellido(buffer);
     
     cout << "Nuevo telefono (" << doctor.getTelefono() << "): ";
-    cin.getline(buffer, 20);
+    Formatos::leerLinea(buffer, 20);
     if (strlen(buffer) > 0) doctor.setTelefono(buffer);
     
     cout << "Nuevo email (" << doctor.getEmail() << "): ";
-    cin.getline(buffer, 50);
+    Formatos::leerLinea(buffer, 50);
     if (strlen(buffer) > 0) doctor.setEmail(buffer);
     
     cout << "Nuevo horario (" << doctor.getHorarioAtencion() << "): ";
-    cin.getline(buffer, 50);
+    Formatos::leerLinea(buffer, 50);
     if (strlen(buffer) > 0) doctor.setHorarioAtencion(buffer);
     
     cout << "Nuevo costo de consulta (" << doctor.getCostoConsulta() << "): ";
-    float nuevoCosto;
-    if (cin >> nuevoCosto) {
-        doctor.setCostoConsulta(nuevoCosto);
+    Formatos::leerLinea(buffer, 50);
+    if (strlen(buffer) > 0) {
+        doctor.setCostoConsulta(atof(buffer));
     }
-    limpiarBufferDoctores();
     
     cout << "Disponible (1=Si, 0=No) (" << (doctor.getDisponible() ? "Si" : "No") << "): ";
     char disp[2];
-    cin.getline(disp, 2);
+    Formatos::leerLinea(disp, 2);
     if (strlen(disp) > 0) {
         doctor.setDisponible(disp[0] == '1');
     }
@@ -243,9 +232,7 @@ void modificarDoctor() {
 void eliminarDoctor() {
     cout << "\n=== ELIMINAR DOCTOR ===" << endl;
     cout << "ID del doctor a eliminar: ";
-    int id;
-    cin >> id;
-    limpiarBufferDoctores();
+    int id = Formatos::leerEntero();
     
     if (GestorArchivos::eliminarDoctorLogico(id)) {
         cout << "Doctor eliminado exitosamente." << endl;
@@ -279,7 +266,7 @@ void listarDoctoresPorEspecialidad() {
     cout << "\n=== LISTAR DOCTORES POR ESPECIALIDAD ===" << endl;
     char especialidad[50];
     cout << "Especialidad a buscar: ";
-    cin.getline(especialidad, 50);
+    Formatos::leerLinea(especialidad, 50);
     
     vector<Doctor> doctores = GestorArchivos::listarDoctoresActivos();
     int contador = 0;
@@ -304,10 +291,9 @@ void asignarPacienteADoctor() {
     int idDoctor, idPaciente;
     
     cout << "ID del doctor: ";
-    cin >> idDoctor;
+    idDoctor = Formatos::leerEntero();
     cout << "ID del paciente: ";
-    cin >> idPaciente;
-    limpiarBufferDoctores();
+    idPaciente = Formatos::leerEntero();
     
     Doctor doctor = GestorArchivos::buscarDoctorPorID(idDoctor);
     if (doctor.getId() == -1) {
@@ -337,10 +323,9 @@ void removerPacienteDeDoctor() {
     int idDoctor, idPaciente;
     
     cout << "ID del doctor: ";
-    cin >> idDoctor;
+    idDoctor = Formatos::leerEntero();
     cout << "ID del paciente: ";
-    cin >> idPaciente;
-    limpiarBufferDoctores();
+    idPaciente = Formatos::leerEntero();
     
     Doctor doctor = GestorArchivos::buscarDoctorPorID(idDoctor);
     if (doctor.getId() == -1) {
@@ -364,8 +349,7 @@ void listarPacientesDeDoctor() {
     int idDoctor;
     
     cout << "ID del doctor: ";
-    cin >> idDoctor;
-    limpiarBufferDoctores();
+    idDoctor = Formatos::leerEntero();
     
     Doctor doctor = GestorArchivos::buscarDoctorPorID(idDoctor);
     if (doctor.getId() == -1) {

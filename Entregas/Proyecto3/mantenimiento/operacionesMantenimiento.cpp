@@ -24,6 +24,7 @@ namespace fs = std::experimental::filesystem;
 #include "../doctores/Doctor.hpp"
 #include "../citas/Cita.hpp"
 #include "../historial/HistorialMedico.hpp"
+#include "../utilidades/Formatos.hpp"
 
 using namespace std;
 
@@ -61,8 +62,7 @@ void menuMantenimiento(Hospital& hospital) {
         cout << "7. Verificar sistema de archivos" << endl;
         cout << "0. Volver" << endl;
         cout << "Opcion: ";
-        cin >> opcion;
-        cin.ignore(256, '\n');
+        opcion = Formatos::leerEntero();
 
         switch(opcion) {
             case 1: compactarTodosArchivos(); pauseAndClear(); break;
@@ -113,8 +113,10 @@ void crearRespaldo() {
 void restaurarRespaldo() {
 #if FS_AVAILABLE
     cout << "Restaurar respaldo: ingrese el nombre del directorio de respaldo: ";
-    string dir;
-    getline(cin, dir);
+    char buffer[256];
+    Formatos::leerLinea(buffer, 256);
+    string dir(buffer);
+    
     if (dir.empty()) {
         cout << "Operacion cancelada." << endl;
         return;

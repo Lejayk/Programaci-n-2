@@ -1,4 +1,5 @@
 #include "Doctor.hpp"
+#include "../utilidades/Validaciones.hpp"
 #include <iostream>
 #include <cstring>
 #include <cctype>
@@ -96,32 +97,8 @@ void Doctor::setApellido(const char* apellido) {
 }
 
 void Doctor::setCedulaProfesional(const char* cedulaProfesional) {
-    if (!cedulaProfesional) {
-        std::cout << "Error: La cedula profesional no puede estar vacia\n";
-        return;
-    }
-    int len = (int)strlen(cedulaProfesional);
-    if (len == 0 || len >= (int)sizeof(this->cedulaProfesional)) {
-        std::cout << "Error: La cedula profesional es invalida\n";
-        return;
-    }
-    if (len < 3) {
-        std::cout << "Error: La cedula profesional es invalida\n";
-        return;
-    }
-    if (cedulaProfesional[1] != '-') {
-        std::cout << "Error: Formato de cedula profesional invalido. Use V-12345678\n";
-        return;
-    }
-    for (int i = 2; i < len; i++) {
-        if (!isdigit((unsigned char)cedulaProfesional[i])) {
-            std::cout << "Error: Formato de cedula profesional invalido. Los caracteres despues del guion deben ser numeros\n";
-            return;
-        }
-    }
-    char primera = cedulaProfesional[0];
-    if (primera != 'V' && primera != 'v' && primera != 'E' && primera != 'e') {
-        std::cout << "Error: Cedula profesional debe comenzar con V o E\n";
+    if (!Validaciones::validarCedulaProfesional(cedulaProfesional)) {
+        std::cout << "Error: Cedula profesional invalida (V-12345678 o E-12345678)\n";
         return;
     }
     strncpy(this->cedulaProfesional, cedulaProfesional, sizeof(this->cedulaProfesional) - 1);
@@ -144,12 +121,8 @@ void Doctor::setEspecialidad(const char* especialidad) {
 }
 
 void Doctor::setAniosExperiencia(int aniosExperiencia) {
-    if (aniosExperiencia < 0) {
-        std::cout << "Error: Los años de experiencia no pueden ser negativos\n";
-        return;
-    }
-    if (aniosExperiencia > 100) {
-        std::cout << "Error: Años de experiencia no validos (maximo 100)\n";
+    if (!Validaciones::validarRango(aniosExperiencia, 0, 100)) {
+        std::cout << "Error: Años de experiencia no validos (0-100)\n";
         return;
     }
     this->aniosExperiencia = aniosExperiencia;
@@ -157,12 +130,8 @@ void Doctor::setAniosExperiencia(int aniosExperiencia) {
 }
 
 void Doctor::setCostoConsulta(float costoConsulta) {
-    if (costoConsulta < 0.0f) {
-        std::cout << "Error: El costo de consulta no puede ser negativo\n";
-        return;
-    }
-    if (costoConsulta > 10000.0f) {
-        std::cout << "Error: Costo de consulta demasiado alto\n";
+    if (!Validaciones::validarRangoFloat(costoConsulta, 0.0f, 10000.0f)) {
+        std::cout << "Error: Costo de consulta invalido (0-10000)\n";
         return;
     }
     this->costoConsulta = costoConsulta;
@@ -180,22 +149,7 @@ void Doctor::setHorarioAtencion(const char* horarioAtencion) {
 }
 
 void Doctor::setTelefono(const char* telefono) {
-    if (!telefono || strlen(telefono) < 7) {
-        std::cout << "Error: El telefono debe tener al menos 7 digitos\n";
-        return;
-    }
-    if (strlen(telefono) >= sizeof(this->telefono)) {
-        std::cout << "Error: El telefono es demasiado largo\n";
-        return;
-    }
-    
-    // Contar dígitos
-    int digitCount = 0;
-    for (int i = 0; telefono[i] != '\0'; i++) {
-        if (isdigit(telefono[i])) digitCount++;
-    }
-    
-    if (digitCount < 7) {
+    if (!Validaciones::validarTelefono(telefono)) {
         std::cout << "Error: El telefono debe contener al menos 7 digitos\n";
         return;
     }
@@ -206,67 +160,9 @@ void Doctor::setTelefono(const char* telefono) {
 }
 
 void Doctor::setEmail(const char* email) {
-    // Portar validacion completa de SistemaDeGestionHospitalario2.cpp
-    if (!email || strlen(email) == 0) {
-        // Permitir vacío
-        strncpy(this->email, "", sizeof(this->email) - 1);
-        this->email[sizeof(this->email) - 1] = '\0';
-        return;
-    }
-    if (strlen(email) >= sizeof(this->email)) {
-        std::cout << "Error: El email es demasiado largo\n";
-        return;
-    }
-    const char* at = strchr(email, '@');
-    if (!at) {
+    if (!Validaciones::validarEmail(email)) {
         std::cout << "Error: Email invalido\n";
         return;
-    }
-    if (strchr(at + 1, '@')) {
-        std::cout << "Error: Email invalido\n";
-        return;
-    }
-    if (at == email) {
-        std::cout << "Error: Email invalido\n";
-        return;
-    }
-    if (*(at + 1) == '\0') {
-        std::cout << "Error: Email invalido\n";
-        return;
-    }
-    const char* dot = strchr(at, '.');
-    if (!dot) {
-        std::cout << "Error: Email invalido\n";
-        return;
-    }
-    if (dot == at + 1) {
-        std::cout << "Error: Email invalido\n";
-        return;
-    }
-    const char* lastDot = strrchr(email, '.');
-    if (!lastDot || strlen(lastDot) <= 1) {
-        std::cout << "Error: Email invalido\n";
-        return;
-    }
-    if (strlen(lastDot) < 3) {
-        std::cout << "Error: Email invalido\n";
-        return;
-    }
-    for (const char* p = email; p < at; p++) {
-        if (!isalnum((unsigned char)*p) && *p != '.' && *p != '_' && *p != '-' && *p != '+') {
-            std::cout << "Error: Email invalido\n";
-            return;
-        }
-    }
-    if (email[0] == '.' || *(at - 1) == '.') {
-        std::cout << "Error: Email invalido\n";
-        return;
-    }
-    for (const char* p = at + 1; *p; p++) {
-        if (!isalnum((unsigned char)*p) && *p != '.' && *p != '-') {
-            std::cout << "Error: Email invalido\n";
-            return;
-        }
     }
     strncpy(this->email, email, sizeof(this->email) - 1);
     this->email[sizeof(this->email) - 1] = '\0';

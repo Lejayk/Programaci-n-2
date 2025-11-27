@@ -2,16 +2,13 @@
 #include "../persistencia/GestorArchivos.hpp"
 #include "../pacientes/Paciente.hpp"
 #include "../doctores/Doctor.hpp"
+#include "../utilidades/Formatos.hpp"
 #include <iostream>
 #include <cstring>
 #include <vector>
 #include <algorithm>
 
 using namespace std;
-
-void limpiarBufferCitas() {
-    cin.ignore(256, '\n');
-}
 
 bool verificarDisponibilidadDoctor(int idDoctor, const char* fecha, const char* hora, int citaID = -1) {
     vector<Cita> citas = GestorArchivos::listarCitasActivas();
@@ -47,8 +44,7 @@ void menuCitas(Hospital& hospital) {
         cout << "9. Modificar cita" << endl;
         cout << "0. Volver" << endl;
         cout << "\nOpcion: ";
-        cin >> opcion;
-        limpiarBufferCitas();
+        opcion = Formatos::leerEntero();
         
         switch(opcion) {
             case 1:
@@ -96,16 +92,15 @@ void agendarCita(Hospital& hospital) {
     char fecha[11], hora[6], motivo[150];
     
     cout << "ID del paciente: ";
-    cin >> pacienteID;
+    pacienteID = Formatos::leerEntero();
     cout << "ID del doctor: ";
-    cin >> doctorID;
-    limpiarBufferCitas();
+    doctorID = Formatos::leerEntero();
     cout << "Fecha (YYYY-MM-DD): ";
-    cin.getline(fecha, 11);
+    Formatos::leerLinea(fecha, 11);
     cout << "Hora (HH:MM): ";
-    cin.getline(hora, 6);
+    Formatos::leerLinea(hora, 6);
     cout << "Motivo de la cita: ";
-    cin.getline(motivo, 150);
+    Formatos::leerLinea(motivo, 150);
     
     // Verificar que paciente existe
     Paciente paciente = GestorArchivos::buscarPacientePorID(pacienteID);
@@ -161,9 +156,7 @@ void agendarCita(Hospital& hospital) {
 void cancelarCita() {
     cout << "\n=== CANCELAR CITA ===" << endl;
     cout << "ID de la cita a cancelar: ";
-    int id;
-    cin >> id;
-    limpiarBufferCitas();
+    int id = Formatos::leerEntero();
     
     Cita cita = GestorArchivos::buscarCitaPorID(id);
     if (cita.getId() == -1) {
@@ -193,9 +186,7 @@ void cancelarCita() {
 void atenderCita(Hospital& hospital) {
     cout << "\n=== ATENDER CITA ===" << endl;
     cout << "ID de la cita a atender: ";
-    int id;
-    cin >> id;
-    limpiarBufferCitas();
+    int id = Formatos::leerEntero();
     
     Cita cita = GestorArchivos::buscarCitaPorID(id);
     if (cita.getId() == -1) {
@@ -210,7 +201,7 @@ void atenderCita(Hospital& hospital) {
     
     char observaciones[200];
     cout << "Observaciones de la consulta: ";
-    cin.getline(observaciones, 200);
+    Formatos::leerLinea(observaciones, 200);
     
     cita.setEstado("Atendida");
     cita.setAtendida(true);
@@ -230,9 +221,7 @@ void atenderCita(Hospital& hospital) {
 void buscarCitaPorID() {
     cout << "\n=== BUSCAR CITA POR ID ===" << endl;
     cout << "ID de la cita: ";
-    int id;
-    cin >> id;
-    limpiarBufferCitas();
+    int id = Formatos::leerEntero();
     
     Cita cita = GestorArchivos::buscarCitaPorID(id);
     if (cita.getId() != -1) {
@@ -259,9 +248,7 @@ void buscarCitaPorID() {
 void listarCitasPorPaciente() {
     cout << "\n=== LISTAR CITAS POR PACIENTE ===" << endl;
     cout << "ID del paciente: ";
-    int id;
-    cin >> id;
-    limpiarBufferCitas();
+    int id = Formatos::leerEntero();
     
     Paciente paciente = GestorArchivos::buscarPacientePorID(id);
     if (paciente.getId() == -1) {
@@ -290,9 +277,7 @@ void listarCitasPorPaciente() {
 void listarCitasPorDoctor() {
     cout << "\n=== LISTAR CITAS POR DOCTOR ===" << endl;
     cout << "ID del doctor: ";
-    int id;
-    cin >> id;
-    limpiarBufferCitas();
+    int id = Formatos::leerEntero();
     
     Doctor doctor = GestorArchivos::buscarDoctorPorID(id);
     if (doctor.getId() == -1) {
@@ -371,9 +356,7 @@ void listarCitasPendientes() {
 void modificarCita() {
     cout << "\n=== MODIFICAR CITA ===" << endl;
     cout << "ID de la cita a modificar: ";
-    int id;
-    cin >> id;
-    limpiarBufferCitas();
+    int id = Formatos::leerEntero();
     
     Cita cita = GestorArchivos::buscarCitaPorID(id);
     if (cita.getId() == -1) {
@@ -399,13 +382,12 @@ void modificarCita() {
     cout << "4. Estado" << endl;
     cout << "5. Cancelar" << endl;
     cout << "Opcion: ";
-    cin >> opcion;
-    limpiarBufferCitas();
+    opcion = Formatos::leerEntero();
     
     switch(opcion) {
         case 1: {
             cout << "Nueva fecha (YYYY-MM-DD): ";
-            cin.getline(buffer, 11);
+            Formatos::leerLinea(buffer, 11);
             if (strlen(buffer) > 0) {
                 // Verificar disponibilidad si cambia fecha/hora
                 if (!verificarDisponibilidadDoctor(cita.getDoctorID(), buffer, cita.getHora(), cita.getId())) {
@@ -418,7 +400,7 @@ void modificarCita() {
         }
         case 2: {
             cout << "Nueva hora (HH:MM): ";
-            cin.getline(buffer, 6);
+            Formatos::leerLinea(buffer, 6);
             if (strlen(buffer) > 0) {
                 // Verificar disponibilidad
                 if (!verificarDisponibilidadDoctor(cita.getDoctorID(), cita.getFecha(), buffer, cita.getId())) {
@@ -431,7 +413,7 @@ void modificarCita() {
         }
         case 3: {
             cout << "Nuevas observaciones: ";
-            cin.getline(buffer, 200);
+            Formatos::leerLinea(buffer, 200);
             if (strlen(buffer) > 0) {
                 cita.setObservaciones(buffer);
             }
@@ -439,7 +421,7 @@ void modificarCita() {
         }
         case 4: {
             cout << "Nuevo estado (Agendada/Cancelada/Reprogramada): ";
-            cin.getline(buffer, 20);
+            Formatos::leerLinea(buffer, 20);
             if (strlen(buffer) > 0) {
                 cita.setEstado(buffer);
             }

@@ -3,7 +3,7 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -I.
 
 # Ejecutable final
-TARGET = SistetmaGestionHospitalario3
+TARGET = SistemaDeGestionHospitalario3.exe
 
 # Archivos fuente del proyecto
 SRC = main.cpp \
@@ -12,7 +12,9 @@ SRC = main.cpp \
 	  doctores/Doctor.cpp doctores/operacionesDoctores.cpp \
 	  citas/Cita.cpp citas/operacionesCitas.cpp \
 	  historial/HistorialMedico.cpp historial/operacionesHistorial.cpp \
-	  persistencia/GestorArchivos.cpp
+	  persistencia/GestorArchivos.cpp \
+	  mantenimiento/operacionesMantenimiento.cpp \
+	  utilidades/Formatos.cpp utilidades/Validaciones.cpp
 
 # Objetos (.o) generados a partir de .cpp
 OBJ = $(SRC:.cpp=.o)
@@ -30,5 +32,5 @@ $(TARGET): $(OBJ)
 
 # Limpiar archivos generados
 clean:
-	rm -f $(OBJ) $(TARGET)
+	del /Q $(subst /,\,$(OBJ)) $(TARGET) 2>nul || rm -f $(OBJ) $(TARGET)
 

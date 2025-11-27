@@ -1,13 +1,11 @@
 #include "operacionesPacientes.hpp"
 #include "../persistencia/GestorArchivos.hpp"
+#include "../utilidades/Formatos.hpp"
 #include <iostream>
 #include <cstring>
 
 using namespace std;
 
-void limpiarBufferPacientes() {
-    cin.ignore(256, '\n');
-}
 // (Funciones de Paciente implementadas en Paciente.cpp)
 void menuPacientes(Hospital& hospital) {
     int opcion;
@@ -25,8 +23,7 @@ void menuPacientes(Hospital& hospital) {
         cout << "8. Ver historial medico" << endl;
         cout << "0. Volver" << endl;
         cout << "\nOpcion: ";
-        cin >> opcion;
-        limpiarBufferPacientes();
+        opcion = Formatos::leerEntero();
         
         switch(opcion) {
             case 1:
@@ -69,7 +66,7 @@ void buscarPacientesPorNombre() {
     cout << string(60, '-') << endl;
     cout << "Nombre o parte del nombre: ";
     char buffer[100];
-    cin.getline(buffer, 100);
+    Formatos::leerLinea(buffer, 100);
     string busc = buffer;
     if (busc.empty()) {
         cout << "Operacion cancelada." << endl;
@@ -122,31 +119,31 @@ void registrarPaciente(Hospital& hospital) {
     int edad;
     char sexo;
     char tipoSangre[5], telefono[20], email[50], direccion[80], alergias[100], observaciones[200];
+    char bufferSexo[5];
     
     cout << "Nombre: ";
-    cin.getline(nombre, 50);
+    Formatos::leerLinea(nombre, 50);
     cout << "Apellido: ";
-    cin.getline(apellido, 50);
+    Formatos::leerLinea(apellido, 50);
     cout << "Cedula (V-12345678): ";
-    cin.getline(cedula, 20);
+    Formatos::leerLinea(cedula, 20);
     cout << "Edad: ";
-    cin >> edad;
-    limpiarBufferPacientes();
+    edad = Formatos::leerEntero();
     cout << "Sexo (M/F/O): ";
-    cin >> sexo;
-    limpiarBufferPacientes();
+    Formatos::leerLinea(bufferSexo, 5);
+    sexo = bufferSexo[0];
     cout << "Tipo de sangre (A+, A-, etc): ";
-    cin.getline(tipoSangre, 5);
+    Formatos::leerLinea(tipoSangre, 5);
     cout << "Telefono: ";
-    cin.getline(telefono, 20);
+    Formatos::leerLinea(telefono, 20);
     cout << "Email: ";
-    cin.getline(email, 50);
+    Formatos::leerLinea(email, 50);
     cout << "Direccion: ";
-    cin.getline(direccion, 80);
+    Formatos::leerLinea(direccion, 80);
     cout << "Alergias: ";
-    cin.getline(alergias, 100);
+    Formatos::leerLinea(alergias, 100);
     cout << "Observaciones: ";
-    cin.getline(observaciones, 200);
+    Formatos::leerLinea(observaciones, 200);
     
     Paciente paciente(nombre, apellido, cedula);
     paciente.setEdad(edad);
@@ -174,9 +171,7 @@ void registrarPaciente(Hospital& hospital) {
 void buscarPacientePorID() {
     cout << "\n=== BUSCAR PACIENTE POR ID ===" << endl;
     cout << "ID del paciente: ";
-    int id;
-    cin >> id;
-    limpiarBufferPacientes();
+    int id = Formatos::leerEntero();
     
     Paciente paciente = GestorArchivos::buscarPacientePorID(id);
     if (paciente.getId() != -1) {
@@ -190,7 +185,7 @@ void buscarPacientePorCedula() {
     cout << "\n=== BUSCAR PACIENTE POR CEDULA ===" << endl;
     char cedula[20];
     cout << "Cedula: ";
-    cin.getline(cedula, 20);
+    Formatos::leerLinea(cedula, 20);
     
     Paciente paciente = GestorArchivos::buscarPacientePorCedula(cedula);
     if (paciente.getId() != -1) {
@@ -203,9 +198,7 @@ void buscarPacientePorCedula() {
 void modificarPaciente() {
     cout << "\n=== MODIFICAR PACIENTE ===" << endl;
     cout << "ID del paciente a modificar: ";
-    int id;
-    cin >> id;
-    limpiarBufferPacientes();
+    int id = Formatos::leerEntero();
     
     Paciente paciente = GestorArchivos::buscarPacientePorID(id);
     if (paciente.getId() == -1) {
@@ -220,27 +213,27 @@ void modificarPaciente() {
     cout << "\nDeje en blanco para no cambiar." << endl;
     
     cout << "Nuevo nombre (" << paciente.getNombre() << "): ";
-    cin.getline(buffer, 50);
+    Formatos::leerLinea(buffer, 50);
     if (strlen(buffer) > 0) paciente.setNombre(buffer);
     
     cout << "Nuevo apellido (" << paciente.getApellido() << "): ";
-    cin.getline(buffer, 50);
+    Formatos::leerLinea(buffer, 50);
     if (strlen(buffer) > 0) paciente.setApellido(buffer);
     
     cout << "Nuevo telefono (" << paciente.getTelefono() << "): ";
-    cin.getline(buffer, 20);
+    Formatos::leerLinea(buffer, 20);
     if (strlen(buffer) > 0) paciente.setTelefono(buffer);
     
     cout << "Nuevo email (" << paciente.getEmail() << "): ";
-    cin.getline(buffer, 50);
+    Formatos::leerLinea(buffer, 50);
     if (strlen(buffer) > 0) paciente.setEmail(buffer);
     
     cout << "Nuevas alergias (" << paciente.getAlergias() << "): ";
-    cin.getline(buffer, 100);
+    Formatos::leerLinea(buffer, 100);
     if (strlen(buffer) > 0) paciente.setAlergias(buffer);
     
     cout << "Nuevas observaciones (" << paciente.getObservaciones() << "): ";
-    cin.getline(buffer, 200);
+    Formatos::leerLinea(buffer, 200);
     if (strlen(buffer) > 0) paciente.setObservaciones(buffer);
     
     if (GestorArchivos::guardarPaciente(paciente)) {
@@ -253,9 +246,7 @@ void modificarPaciente() {
 void eliminarPaciente() {
     cout << "\n=== ELIMINAR PACIENTE ===" << endl;
     cout << "ID del paciente a eliminar: ";
-    int id;
-    cin >> id;
-    limpiarBufferPacientes();
+    int id = Formatos::leerEntero();
     
     if (GestorArchivos::eliminarPacienteLogico(id)) {
         cout << "Paciente eliminado exitosamente." << endl;

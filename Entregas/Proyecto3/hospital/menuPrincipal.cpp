@@ -4,6 +4,7 @@
 #include "../doctores/operacionesDoctores.hpp"
 #include "../citas/operacionesCitas.hpp"
 #include "../historial/operacionesHistorial.hpp"
+#include "../utilidades/Formatos.hpp"
 
 #include <iostream>
 
@@ -26,7 +27,7 @@ void menuPrincipal(Hospital& hospital) {
         cout << "4. Historial medico\n";
         cout << "0. Salir\n";
         cout << "Opcion: ";
-        cin >> op;
+        op = Formatos::leerEntero();
 
         switch (op) {
         case 1: menuPacientes(hospital); break;

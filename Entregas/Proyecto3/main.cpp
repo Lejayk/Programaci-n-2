@@ -7,31 +7,9 @@
 #include "citas/operacionesCitas.hpp"
 #include "historial/operacionesHistorial.hpp"
 #include "mantenimiento/operacionesMantenimiento.hpp"
+#include "utilidades/Formatos.hpp"
 
 using namespace std;
-
-void limpiarBuffer() {
-    cin.ignore(256, '\n');
-}
-
-void leerLinea(char* buffer, int size) {
-    cin.getline(buffer, size);
-    if (cin.fail()) {
-        cin.clear();
-        limpiarBuffer();
-    }
-    buffer[size-1] = '\0';
-}
-
-int leerEntero() {
-    int x;
-    if (!(cin >> x)) {
-        cin.clear();
-        limpiarBuffer();
-        return -1;
-    }
-    return x;
-}
 
 void mostrarMenuPrincipal() {
     cout << "\n========================================" << endl;
@@ -68,8 +46,7 @@ int main() {
     int opcion;
     do {
         mostrarMenuPrincipal();
-        opcion = leerEntero();
-        limpiarBuffer();
+        opcion = Formatos::leerEntero();
         
         switch(opcion) {
             case 1:

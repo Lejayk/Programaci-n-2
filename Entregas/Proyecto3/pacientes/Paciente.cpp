@@ -1,4 +1,5 @@
 #include "Paciente.hpp"
+#include "../utilidades/Validaciones.hpp"
 #include <iostream>
 #include <cstring>
 #include <cctype>
@@ -98,7 +99,7 @@ void Paciente::setApellido(const char* ape) {
 }
 
 void Paciente::setCedula(const char* c) {
-    if (!c || strlen(c) < 5) {
+    if (!Validaciones::validarCedula(c)) {
         std::cout << "Error: Cedula invalida\n";
         return;
     }
@@ -107,7 +108,7 @@ void Paciente::setCedula(const char* c) {
 }
 
 void Paciente::setEdad(int e) {
-    if (e < 0 || e > 120) {
+    if (!Validaciones::validarRango(e, 0, 120)) {
         std::cout << "Error: Edad fuera de rango\n";
         return;
     }
@@ -116,21 +117,16 @@ void Paciente::setEdad(int e) {
 }
 
 void Paciente::setSexo(char s) {
-    s = toupper(s);
-    if (s != 'M' && s != 'F' && s != 'O') {
+    if (!Validaciones::validarSexo(s)) {
         std::cout << "Error: Sexo invalido (M/F/O)\n";
         return;
     }
-    sexo = s;
+    sexo = toupper(s);
     fechaModificacion = time(nullptr);
 }
 
 void Paciente::setTipoSangre(const char* t) {
-    const char* validos[] = {"A+","A-","B+","B-","AB+","AB-","O+","O-"};
-    bool ok = false;
-    for (const char* v : validos) if (strcmp(t, v) == 0) ok = true;
-
-    if (!ok) {
+    if (!Validaciones::validarTipoSangre(t)) {
         std::cout << "Error: Tipo de sangre invalido\n";
         return;
     }
@@ -140,7 +136,7 @@ void Paciente::setTipoSangre(const char* t) {
 }
 
 void Paciente::setTelefono(const char* tel) {
-    if (!tel || strlen(tel) < 7) {
+    if (!Validaciones::validarTelefono(tel)) {
         std::cout << "Error: Telefono invalido\n";
         return;
     }
@@ -149,7 +145,7 @@ void Paciente::setTelefono(const char* tel) {
 }
 
 void Paciente::setEmail(const char* mail) {
-    if (!mail || strchr(mail, '@') == nullptr) {
+    if (!Validaciones::validarEmail(mail)) {
         std::cout << "Error: Email invalido\n";
         return;
     }

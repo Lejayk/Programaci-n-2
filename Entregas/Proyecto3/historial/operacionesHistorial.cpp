@@ -3,6 +3,7 @@
 #include "../pacientes/Paciente.hpp"
 #include "../doctores/Doctor.hpp"
 #include "../citas/Cita.hpp"
+#include "../utilidades/Formatos.hpp"
 #include <iostream>
 #include <cstring>
 #include <vector>
@@ -10,10 +11,6 @@
 #include <iomanip>
 
 using namespace std;
-
-void limpiarBufferHistorial() {
-    cin.ignore(256, '\n');
-}
 
 HistorialMedico buscarUltimaConsultaPaciente(int pacienteID) {
     Paciente paciente = GestorArchivos::buscarPacientePorID(pacienteID);
@@ -53,8 +50,7 @@ void menuHistorial(Hospital& hospital) {
         cout << "6. Reparar lista de historial" << endl;
         cout << "0. Volver" << endl;
         cout << "\nOpcion: ";
-        cin >> opcion;
-        limpiarBufferHistorial();
+        opcion = Formatos::leerEntero();
         
         switch(opcion) {
             case 1:
@@ -93,19 +89,18 @@ void registrarConsulta(Hospital& hospital) {
     char fecha[11], hora[6];
     
     cout << "ID del paciente: ";
-    cin >> pacienteID;
+    pacienteID = Formatos::leerEntero();
     cout << "ID del doctor: ";
-    cin >> doctorID;
+    doctorID = Formatos::leerEntero();
     cout << "Costo de la consulta: ";
-    cin >> costo;
-    limpiarBufferHistorial();
+    costo = Formatos::leerFloat();
     
     cout << "Diagnostico: ";
-    cin.getline(diagnostico, 200);
+    Formatos::leerLinea(diagnostico, 200);
     cout << "Tratamiento: ";
-    cin.getline(tratamiento, 200);
+    Formatos::leerLinea(tratamiento, 200);
     cout << "Medicamentos: ";
-    cin.getline(medicamentos, 150);
+    Formatos::leerLinea(medicamentos, 150);
     
     // Usar fecha y hora actual por defecto
     time_t ahora = time(nullptr);
@@ -220,9 +215,7 @@ void registrarConsultaDesdeCita(Hospital& hospital, int citaID, const char* diag
 void verHistorialPaciente() {
     cout << "\n=== VER HISTORIAL DE PACIENTE ===" << endl;
     cout << "ID del paciente: ";
-    int id;
-    cin >> id;
-    limpiarBufferHistorial();
+    int id = Formatos::leerEntero();
     
     Paciente paciente = GestorArchivos::buscarPacientePorID(id);
     if (paciente.getId() == -1) {
@@ -281,9 +274,7 @@ void verHistorialPaciente() {
 void buscarConsultaPorID() {
     cout << "\n=== BUSCAR CONSULTA POR ID ===" << endl;
     cout << "ID de la consulta: ";
-    int id;
-    cin >> id;
-    limpiarBufferHistorial();
+    int id = Formatos::leerEntero();
     
     HistorialMedico consulta = GestorArchivos::buscarHistorialPorID(id);
     if (consulta.getId() != -1) {
@@ -325,9 +316,7 @@ void listarTodasConsultas() {
 void eliminarConsulta() {
     cout << "\n=== ELIMINAR CONSULTA ===" << endl;
     cout << "ID de la consulta a eliminar: ";
-    int id;
-    cin >> id;
-    limpiarBufferHistorial();
+    int id = Formatos::leerEntero();
     
     // Nota: La eliminación de consultas en una lista enlazada es compleja
     // Por simplicidad, solo marcamos como eliminada
@@ -342,9 +331,7 @@ void eliminarConsulta() {
 void repararListaHistorial() {
     cout << "\n=== REPARAR LISTA DE HISTORIAL ===" << endl;
     cout << "ID del paciente a reparar: ";
-    int pacienteID;
-    cin >> pacienteID;
-    limpiarBufferHistorial();
+    int pacienteID = Formatos::leerEntero();
     
     Paciente paciente = GestorArchivos::buscarPacientePorID(pacienteID);
     if (paciente.getId() == -1) {

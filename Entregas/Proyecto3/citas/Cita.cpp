@@ -1,4 +1,5 @@
 #include "Cita.hpp"
+#include "../utilidades/Validaciones.hpp"
 #include <iostream>
 #include <cstring>
 #include <cctype>
@@ -171,57 +172,11 @@ void Cita::setEliminado(bool eliminado) {
 
 // Métodos de validación
 bool Cita::validarFecha(const char* fecha) const {
-    if (!fecha || strlen(fecha) != 10) return false;
-    
-    // Verificar formato YYYY-MM-DD
-    for (int i = 0; i < 10; i++) {
-        if (i == 4 || i == 7) {
-            if (fecha[i] != '-') return false;
-        } else {
-            if (fecha[i] < '0' || fecha[i] > '9') return false;
-        }
-    }
-    
-    // Validar componentes de fecha
-    int year = (fecha[0]-'0')*1000 + (fecha[1]-'0')*100 + (fecha[2]-'0')*10 + (fecha[3]-'0');
-    int month = (fecha[5]-'0')*10 + (fecha[6]-'0');
-    int day = (fecha[8]-'0')*10 + (fecha[9]-'0');
-    
-    if (year < 1900 || year > 2100) return false;
-    if (month < 1 || month > 12) return false;
-    
-    // Validar días según mes
-    int diasMes = 31;
-    if (month == 4 || month == 6 || month == 9 || month == 11) {
-        diasMes = 30;
-    } else if (month == 2) {
-        // Año bisiesto simplificado
-        diasMes = (year % 4 == 0) ? 29 : 28;
-    }
-    
-    if (day < 1 || day > diasMes) return false;
-    
-    return true;
+    return Validaciones::validarFecha(fecha);
 }
 
 bool Cita::validarHora(const char* hora) const {
-    if (!hora || strlen(hora) != 5) return false;
-    
-    // Verificar formato HH:MM
-    if (hora[2] != ':') return false;
-    
-    for (int i = 0; i < 5; i++) {
-        if (i == 2) continue;
-        if (hora[i] < '0' || hora[i] > '9') return false;
-    }
-    
-    int hh = (hora[0]-'0')*10 + (hora[1]-'0');
-    int mm = (hora[3]-'0')*10 + (hora[4]-'0');
-    
-    if (hh < 0 || hh > 23) return false;
-    if (mm < 0 || mm > 59) return false;
-    
-    return true;
+    return Validaciones::validarHora(hora);
 }
 
 bool Cita::validarDatos() const {

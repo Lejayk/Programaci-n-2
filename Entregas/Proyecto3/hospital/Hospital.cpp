@@ -93,6 +93,7 @@ void Hospital::incrementarCitasAgendadas() { totalCitasAgendadas++; }
 void Hospital::incrementarConsultasRealizadas() { totalConsultasRealizadas++; }
 
 void Hospital::mostrarInformacion() const {
+    system("cls");
     std::cout << "\n=== INFORMACION DEL HOSPITAL ===\n";
     std::cout << "Nombre: " << nombre << "\n";
     std::cout << "Direccion: " << direccion << "\n";
@@ -101,6 +102,8 @@ void Hospital::mostrarInformacion() const {
     std::cout << "Total Doctores: " << totalDoctoresRegistrados << "\n";
     std::cout << "Total Citas: " << totalCitasAgendadas << "\n";
     std::cout << "Total Consultas: " << totalConsultasRealizadas << "\n";
+    system("pause");
+    system("cls");
 }
 
 size_t Hospital::obtenerTamano() {

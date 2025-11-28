@@ -5,8 +5,20 @@
 #include <cstdlib>
 
 bool Validaciones::validarCedula(const char* cedula) {
-    if (!cedula || strlen(cedula) < 5) return false;
+    if (!cedula) return false;
+    int len = (int)strlen(cedula);
+    if (len < 3) return false;
+    
+    // Formato V-12345678
+    char primera = cedula[0];
+    if (primera != 'V' ) return false;
+    if (cedula[1] != '-') return false;
+    
+    for (int i = 2; i < len; i++) {
+        if (!isdigit((unsigned char)cedula[i])) return false;
+    }
     return true;
+
 }
 
 bool Validaciones::validarCedulaProfesional(const char* cedula) {

@@ -12,6 +12,8 @@
 using namespace std;
 
 void mostrarMenuPrincipal() {
+    system("pause");
+    system("cls");
     cout << "\n========================================" << endl;
     cout << "=   SISTEMA DE GESTION HOSPITALARIA v3   =" << endl;
     cout << "=      (POO y Modularizacion)           =" << endl;
@@ -73,6 +75,8 @@ int main() {
                 break;
             default:
                 cout << "Opcion invalida" << endl;
+                system("pause");
+                system("cls");
         }
     } while(opcion != 7);
     

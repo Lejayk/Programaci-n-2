@@ -2,11 +2,14 @@
 #include "../persistencia/GestorArchivos.hpp"
 #include "../pacientes/Paciente.hpp"
 #include "../utilidades/Formatos.hpp"
+#include "../utilidades/Validaciones.hpp"
 #include <iostream>
 #include <cstring>
 #include <vector>
 #include <algorithm>
 #include <cctype>
+#include <iomanip>
+#include <sstream>
 
 // Comparacion case-insensitive portable
 static int strcase_cmp(const char* a, const char* b) {
@@ -22,6 +25,10 @@ static int strcase_cmp(const char* a, const char* b) {
 }
 
 using namespace std;
+
+namespace {
+    constexpr int MAX_RESULTADOS_BUSQUEDA = 100;
+}
 
 void menuDoctores(Hospital& hospital) {
     int opcion;
@@ -116,12 +123,29 @@ void registrarDoctor(Hospital& hospital) {
     cout << "Email: ";
     Formatos::leerLinea(email, 50);
     
+    if (!Validaciones::validarCedulaProfesional(cedulaProfesional)) {
+        cout << "Error: Cedula profesional invalida (V-12345678 o E-12345678)." << endl;
+        return;
+    }
+    if (aniosExperiencia < 0) {
+        cout << "Error: Anios de experiencia no pueden ser negativos." << endl;
+        return;
+    }
+    if (costoConsulta <= 0.0f) {
+        cout << "Error: Costo de consulta debe ser mayor a 0." << endl;
+        return;
+    }
+    if (email[0] != '\0' && !Validaciones::validarEmail(email)) {
+        cout << "Error: Email invalido. Formato usuario@dominio.ext" << endl;
+        return;
+    }
+
     Doctor doctor(nombre, apellido, cedulaProfesional, especialidad);
     doctor.setAniosExperiencia(aniosExperiencia);
     doctor.setCostoConsulta(costoConsulta);
-    doctor.setHorarioAtencion(horarioAtencion);
-    doctor.setTelefono(telefono);
-    doctor.setEmail(email);
+    if (horarioAtencion[0] != '\0') doctor.setHorarioAtencion(horarioAtencion);
+    if (telefono[0] != '\0') doctor.setTelefono(telefono);
+    if (email[0] != '\0') doctor.setEmail(email);
     doctor.setDisponible(true);
     
     if (doctor.validarDatos()) {
@@ -200,10 +224,17 @@ void modificarDoctor() {
     cout << "Nuevo telefono (" << doctor.getTelefono() << "): ";
     Formatos::leerLinea(buffer, 20);
     if (strlen(buffer) > 0) doctor.setTelefono(buffer);
-    
+
     cout << "Nuevo email (" << doctor.getEmail() << "): ";
     Formatos::leerLinea(buffer, 50);
-    if (strlen(buffer) > 0) doctor.setEmail(buffer);
+    if (strlen(buffer) > 0) {
+        if (Validaciones::validarEmail(buffer)) {
+            doctor.setEmail(buffer);
+            cout << "Email actualizado correctamente." << endl;
+        } else {
+            cout << "Error: Email invalido. El valor no se actualizo." << endl;
+        }
+    }
     
     cout << "Nuevo horario (" << doctor.getHorarioAtencion() << "): ";
     Formatos::leerLinea(buffer, 50);
@@ -212,7 +243,12 @@ void modificarDoctor() {
     cout << "Nuevo costo de consulta (" << doctor.getCostoConsulta() << "): ";
     Formatos::leerLinea(buffer, 50);
     if (strlen(buffer) > 0) {
-        doctor.setCostoConsulta(atof(buffer));
+        float nuevoCosto = static_cast<float>(atof(buffer));
+        if (nuevoCosto > 0.0f) {
+            doctor.setCostoConsulta(nuevoCosto);
+        } else {
+            cout << "Error: El costo debe ser mayor a 0. Se mantiene el actual." << endl;
+        }
     }
     
     cout << "Disponible (1=Si, 0=No) (" << (doctor.getDisponible() ? "Si" : "No") << "): ";
@@ -242,24 +278,40 @@ void eliminarDoctor() {
 }
 
 void listarTodosDoctores() {
-    cout << "\n=== LISTA DE DOCTORES ===" << endl;
     vector<Doctor> doctores = GestorArchivos::listarDoctoresActivos();
-    
     if (doctores.empty()) {
         cout << "No hay doctores registrados." << endl;
         return;
     }
-    
-    cout << string(60, '-') << endl;
+
+    cout << "\n" << left << setw(4) << "ID" << setw(26) << "NOMBRE" << setw(16) << "CEDULA"
+         << setw(20) << "ESPECIALIDAD" << setw(6) << "ANIOS" << setw(8) << "COSTO"
+         << setw(8) << "DISP" << "\n";
+    cout << string(100, '-') << endl;
+
     int contador = 0;
     for (const auto& d : doctores) {
-        cout << "ID: " << d.getId() << " - " << d.getNombre() << " " << d.getApellido() << "\n";
-        cout << "  Cedula: " << d.getCedulaProfesional() << "  Especialidad: " << d.getEspecialidad() << "\n";
-        cout << "  Telefono: " << d.getTelefono() << "  Email: " << d.getEmail() << "\n";
-        cout << string(60, '-') << endl;
+        if (d.getEliminado()) continue;
+        if (contador >= MAX_RESULTADOS_BUSQUEDA) break;
+
+        string nombreCompleto = d.getNombre();
+        nombreCompleto += " ";
+        nombreCompleto += d.getApellido();
+
+        ostringstream costo;
+        costo << fixed << setprecision(2) << d.getCostoConsulta();
+
+        cout << left << setw(4) << d.getId()
+             << setw(26) << nombreCompleto
+             << setw(16) << d.getCedulaProfesional()
+             << setw(20) << d.getEspecialidad()
+             << setw(6) << d.getAniosExperiencia()
+             << setw(8) << costo.str()
+             << setw(8) << (d.getDisponible() ? "Si" : "No") << "\n";
         contador++;
     }
-    cout << "Total: " << contador << " doctores" << endl;
+
+    cout << "\nTotal de doctores activos: " << contador << endl;
 }
 
 void listarDoctoresPorEspecialidad() {
@@ -377,7 +429,7 @@ void listarPacientesDeDoctor() {
 
 void buscarDoctoresPorNombre() {
     cout << "\nResultados de busqueda:\n";
-    cout << string(60, '-') << endl;
+    cout << string(100, '-') << endl;
     cout << "Nombre o parte del nombre: ";
     char buffer[100];
     cin.getline(buffer, 100);
@@ -391,6 +443,8 @@ void buscarDoctoresPorNombre() {
     vector<Doctor> doctores = GestorArchivos::listarDoctoresActivos();
     int contador = 0;
     for (const auto &d : doctores) {
+        if (d.getEliminado()) continue;
+        if (contador >= MAX_RESULTADOS_BUSQUEDA) break;
         string nombre = string(d.getNombre());
         string apellido = string(d.getApellido());
         string nombre_l = nombre;
@@ -405,12 +459,24 @@ void buscarDoctoresPorNombre() {
             if (completo.find(busc) != string::npos) coincide = true;
         }
 
-        if (coincide && contador < 100) {
-            cout << "ID: " << d.getId() << " - " << d.getNombre() << " " << d.getApellido() << "\n";
-            cout << "  Cedula: " << d.getCedulaProfesional() << "  Especialidad: " << d.getEspecialidad() << "\n";
-            cout << "  Telefono: " << d.getTelefono() << "  Email: " << d.getEmail() << "\n";
-            cout << string(60, '-') << endl;
+        if (coincide) {
+            string nombreCompleto = d.getNombre();
+            nombreCompleto += " ";
+            nombreCompleto += d.getApellido();
+
+            ostringstream costo;
+            costo << fixed << setprecision(2) << d.getCostoConsulta();
+
+            cout << left << setw(4) << d.getId()
+                 << setw(26) << nombreCompleto
+                 << setw(16) << d.getCedulaProfesional()
+                 << setw(20) << d.getEspecialidad()
+                 << setw(6) << d.getAniosExperiencia()
+                 << setw(8) << costo.str()
+                 << setw(8) << (d.getDisponible() ? "Si" : "No") << "\n";
+            cout << string(100, '-') << endl;
             contador++;
+            if (contador >= MAX_RESULTADOS_BUSQUEDA) break;
         }
     }
 

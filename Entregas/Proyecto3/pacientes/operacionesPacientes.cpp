@@ -1,10 +1,17 @@
 #include "operacionesPacientes.hpp"
 #include "../persistencia/GestorArchivos.hpp"
 #include "../utilidades/Formatos.hpp"
+#include "../utilidades/Validaciones.hpp"
 #include <iostream>
 #include <cstring>
+#include <cctype>
+#include <iomanip>
 
 using namespace std;
+
+namespace {
+    constexpr int MAX_RESULTADOS_BUSQUEDA = 100;
+}
 
 // (Funciones de Paciente implementadas en Paciente.cpp)
 void menuPacientes(Hospital& hospital) {
@@ -63,7 +70,7 @@ void menuPacientes(Hospital& hospital) {
 
 void buscarPacientesPorNombre() {
     cout << "\nResultados de busqueda:\n";
-    cout << string(60, '-') << endl;
+    cout << string(100, '_') << endl;
     cout << "Nombre o parte del nombre: ";
     char buffer[100];
     Formatos::leerLinea(buffer, 100);
@@ -78,6 +85,8 @@ void buscarPacientesPorNombre() {
     vector<Paciente> pacientes = GestorArchivos::listarPacientesActivos();
     int contador = 0;
     for (const auto &p : pacientes) {
+        if (p.getEliminado()) continue;
+        if (contador >= MAX_RESULTADOS_BUSQUEDA) break;
         string nombre = string(p.getNombre());
         string apellido = string(p.getApellido());
         string nombre_l = nombre;
@@ -92,11 +101,20 @@ void buscarPacientesPorNombre() {
             if (completo.find(busc) != string::npos) coincide = true;
         }
 
-        if (coincide && contador < 100) {
-            cout << "ID: " << p.getId() << " - " << p.getNombre() << " " << p.getApellido() << "\n";
-            cout << "  Cedula: " << p.getCedula() << "  Edad: " << p.getEdad() << "  Sexo: " << p.getSexo() << "\n";
-            cout << "  Telefono: " << p.getTelefono() << "  Email: " << p.getEmail() << "\n";
-            cout << string(60, '-') << endl;
+        if (coincide) {
+            if (contador >= MAX_RESULTADOS_BUSQUEDA) break;
+            string nombreCompleto = p.getNombre();
+            nombreCompleto += " ";
+            nombreCompleto += p.getApellido();
+
+            cout << left << setw(4) << p.getId()
+                 << setw(26) << nombreCompleto
+                 << setw(16) << p.getCedula()
+                 << setw(6) << p.getEdad()
+                 << setw(6) << p.getTipoSangre()
+                 << setw(16) << p.getTelefono()
+                 << setw(30) << p.getEmail() << "\n";
+            cout << string(100, '_') << endl;
             contador++;
         }
     }
@@ -145,15 +163,40 @@ void registrarPaciente(Hospital& hospital) {
     cout << "Observaciones: ";
     Formatos::leerLinea(observaciones, 200);
     
+    if (!Validaciones::validarCedula(cedula)) {
+        cout << "Error: Cedula invalida. Formato esperado V-12345678" << endl;
+        return;
+    }
+    if (!Validaciones::validarRango(edad, 0, 120)) {
+        cout << "Error: Edad debe estar entre 0 y 120 anios." << endl;
+        return;
+    }
+    sexo = toupper(sexo);
+    if (!(sexo == 'M' || sexo == 'F')) {
+        cout << "Error: Sexo debe ser M o F." << endl;
+        return;
+    }
+
+    Paciente existente = GestorArchivos::buscarPacientePorCedula(cedula);
+    if (existente.getId() != -1) {
+        cout << "Error: La cedula ya esta registrada." << endl;
+        return;
+    }
+
+    if (email[0] != '\0' && !Validaciones::validarEmail(email)) {
+        cout << "Error: Email invalido. Formato usuario@dominio.ext" << endl;
+        return;
+    }
+
     Paciente paciente(nombre, apellido, cedula);
     paciente.setEdad(edad);
     paciente.setSexo(sexo);
-    paciente.setTipoSangre(tipoSangre);
-    paciente.setTelefono(telefono);
-    paciente.setEmail(email);
-    paciente.setDireccion(direccion);
-    paciente.setAlergias(alergias);
-    paciente.setObservaciones(observaciones);
+    if (tipoSangre[0] != '\0') paciente.setTipoSangre(tipoSangre);
+    if (telefono[0] != '\0') paciente.setTelefono(telefono);
+    if (email[0] != '\0') paciente.setEmail(email);
+    if (direccion[0] != '\0') paciente.setDireccion(direccion);
+    if (alergias[0] != '\0') paciente.setAlergias(alergias);
+    if (observaciones[0] != '\0') paciente.setObservaciones(observaciones);
     
     if (paciente.validarDatos()) {
         if (GestorArchivos::guardarPaciente(paciente)) {
@@ -220,19 +263,47 @@ void modificarPaciente() {
     Formatos::leerLinea(buffer, 50);
     if (strlen(buffer) > 0) paciente.setApellido(buffer);
     
-    cout << "Nuevo telefono (" << paciente.getTelefono() << "): ";
+    char bufferTS[5];
+    cout << "Tipo de sangre registrado: " << paciente.getTipoSangre() << "\nTipo de sangre a registrar: ";
+    Formatos::leerLinea(bufferTS, 5);
+    if (strlen(bufferTS) > 0) paciente.setTipoSangre(bufferTS);
+
+    char bufferSexo[5];
+    cout << "Sexo registrado: " << paciente.getSexo() << "\nSexo a registrar (M/F): ";
+    Formatos::leerLinea(bufferSexo, 5);
+    if (strlen(bufferSexo) > 0) {
+        char nuevoSexo = toupper(bufferSexo[0]);
+        if (nuevoSexo == 'M' || nuevoSexo == 'F') {
+            paciente.setSexo(nuevoSexo);
+        } else {
+            cout << "Sexo invalido. Se mantiene el anterior." << endl;
+        }
+    }
+
+    cout << "Telefono actual: " << paciente.getTelefono() << "\nNuevo telefono: ";
     Formatos::leerLinea(buffer, 20);
     if (strlen(buffer) > 0) paciente.setTelefono(buffer);
-    
-    cout << "Nuevo email (" << paciente.getEmail() << "): ";
+
+    cout << "Direccion actual: " << paciente.getDireccion() << "\nNueva direccion: ";
+    Formatos::leerLinea(buffer, 80);
+    if (strlen(buffer) > 0) paciente.setDireccion(buffer);
+
+    cout << "Email actual: " << paciente.getEmail() << "\nNuevo email: ";
     Formatos::leerLinea(buffer, 50);
-    if (strlen(buffer) > 0) paciente.setEmail(buffer);
-    
-    cout << "Nuevas alergias (" << paciente.getAlergias() << "): ";
+    if (strlen(buffer) > 0) {
+        if (Validaciones::validarEmail(buffer)) {
+            paciente.setEmail(buffer);
+            cout << "Email actualizado correctamente." << endl;
+        } else {
+            cout << "Error: Email invalido. El valor no fue actualizado." << endl;
+        }
+    }
+
+    cout << "Alergias actuales: " << paciente.getAlergias() << "\nNuevas alergias: ";
     Formatos::leerLinea(buffer, 100);
     if (strlen(buffer) > 0) paciente.setAlergias(buffer);
-    
-    cout << "Nuevas observaciones (" << paciente.getObservaciones() << "): ";
+
+    cout << "Observaciones actuales: " << paciente.getObservaciones() << "\nNuevas observaciones: ";
     Formatos::leerLinea(buffer, 200);
     if (strlen(buffer) > 0) paciente.setObservaciones(buffer);
     
@@ -256,20 +327,34 @@ void eliminarPaciente() {
 }
 
 void listarTodosPacientes() {
-    cout << "\nResultados de busqueda:\n";
-    cout << string(60, '-') << endl;
     vector<Paciente> pacientes = GestorArchivos::listarPacientesActivos();
     if (pacientes.empty()) {
         cout << "No hay pacientes registrados." << endl;
         return;
     }
+
+    cout << "\n" << left << setw(4) << "ID" << setw(26) << "NOMBRE" << setw(16) << "CEDULA"
+         << setw(6) << "EDAD" << setw(6) << "TS" << setw(16) << "TELEFONO" << setw(30) << "EMAIL" << "\n";
+    cout << string(100, '_') << endl;
+
     int contador = 0;
     for (const auto& p : pacientes) {
-        cout << "ID: " << p.getId() << " - " << p.getNombre() << " " << p.getApellido() << "\n";
-        cout << "  Cedula: " << p.getCedula() << "  Edad: " << p.getEdad() << "  Sexo: " << p.getSexo() << "\n";
-        cout << "  Telefono: " << p.getTelefono() << "  Email: " << p.getEmail() << "\n";
-        cout << string(60, '-') << endl;
+        if (p.getEliminado()) continue;
+        if (contador >= MAX_RESULTADOS_BUSQUEDA) break;
+
+        string nombreCompleto = p.getNombre();
+        nombreCompleto += " ";
+        nombreCompleto += p.getApellido();
+
+        cout << left << setw(4) << p.getId()
+             << setw(26) << nombreCompleto
+             << setw(16) << p.getCedula()
+             << setw(6) << p.getEdad()
+             << setw(6) << p.getTipoSangre()
+             << setw(16) << p.getTelefono()
+             << setw(30) << p.getEmail() << "\n";
         contador++;
     }
-    cout << "Total: " << contador << " pacientes" << endl;
+
+    cout << "\nTotal de pacientes activos: " << contador << endl;
 }

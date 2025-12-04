@@ -16,8 +16,8 @@ El código está organizado por dominios, separando claramente las responsabilid
 - **Utilidades:** Validaciones y formatos reutilizables.
 
 ### 🔹 Funcionalidades
-- **Gestión de Pacientes:** Registro, búsqueda (ID/Nombre/Cédula), modificación, eliminación lógica, historial de consultas.
-- **Gestión de Doctores:** Registro, búsqueda, gestión de disponibilidad, especialidades.
+- **Gestión de Pacientes:** Registro, búsqueda (ID/Nombre/Cédula), modificación completa, eliminación lógica, historial de consultas.
+- **Gestión de Doctores:** Registro, búsqueda (ID/Nombre/Cédula Profesional/Especialidad), modificación completa, gestión de disponibilidad, especialidades.
 - **Gestión de Citas:** Agendamiento, cancelación, control de estado (Atendida/No asistió).
 - **Historial Médico:** Registro de consultas, diagnósticos, tratamientos y costos.
 - **Mantenimiento:** Compactación de archivos (física), copias de seguridad, verificación de integridad y estadísticas de uso.
@@ -94,18 +94,54 @@ Proyecto3/
 
 ### Requisitos
 - Compilador C++ compatible con C++17 (GCC/MinGW recomendado).
-- Entorno Windows (para comandos de consola específicos) o Linux (adaptable).
+- Entorno Windows (PowerShell o CMD) con `g++` en el `PATH`.
 
-### Compilación Manual (MinGW/G++)
-Ejecute el siguiente comando en la raíz del proyecto para compilar todos los módulos:
+El ejecutable generado se llama `SistemaDeGestionHospitalario3.exe`.
+
+### Compilación desde PowerShell (Windows)
+Ubícate en la carpeta del proyecto (`Proyecto3`) y ejecuta:
 
 ```powershell
-g++ -std=c++17 -O2 -I. -o SistemaHospital.exe main.cpp hospital/Hospital.cpp pacientes/Paciente.cpp pacientes/operacionesPacientes.cpp doctores/Doctor.cpp doctores/operacionesDoctores.cpp citas/Cita.cpp citas/operacionesCitas.cpp historial/HistorialMedico.cpp historial/operacionesHistorial.cpp persistencia/GestorArchivos.cpp mantenimiento/operacionesMantenimiento.cpp utilidades/Validaciones.cpp utilidades/Formatos.cpp
+g++ -std=c++17 -Wall -Wextra -I. main.cpp `
+    hospital/Hospital.cpp hospital/menuPrincipal.cpp `
+    pacientes/Paciente.cpp pacientes/operacionesPacientes.cpp `
+    doctores/Doctor.cpp doctores/operacionesDoctores.cpp `
+    citas/Cita.cpp citas/operacionesCitas.cpp `
+    historial/HistorialMedico.cpp historial/operacionesHistorial.cpp `
+    persistencia/GestorArchivos.cpp `
+    mantenimiento/operacionesMantenimiento.cpp `
+    utilidades/Formatos.cpp utilidades/Validaciones.cpp `
+    -o SistemaDeGestionHospitalario3.exe
 ```
 
-### Ejecución
+### Compilación desde CMD (Windows)
+En la misma carpeta del proyecto, ejecuta:
+
+```bat
+g++ -std=c++17 -Wall -Wextra -I. main.cpp ^
+    hospital/Hospital.cpp hospital/menuPrincipal.cpp ^
+    pacientes/Paciente.cpp pacientes/operacionesPacientes.cpp ^
+    doctores/Doctor.cpp doctores/operacionesDoctores.cpp ^
+    citas/Cita.cpp citas/operacionesCitas.cpp ^
+    historial/HistorialMedico.cpp historial/operacionesHistorial.cpp ^
+    persistencia/GestorArchivos.cpp ^
+    mantenimiento/operacionesMantenimiento.cpp ^
+    utilidades/Formatos.cpp utilidades/Validaciones.cpp ^
+    -o SistemaDeGestionHospitalario3.exe
+```
+
+### Ejecución del programa
+
+Desde PowerShell:
+
 ```powershell
-.\SistemaHospital.exe
+./SistemaDeGestionHospitalario3.exe
+```
+
+Desde CMD:
+
+```bat
+SistemaDeGestionHospitalario3.exe
 ```
 
 ---

@@ -38,7 +38,6 @@ int main() {
     // Cargar o crear Hospital si no existe o falla la carga de datos
     Hospital hospital;
     if (!GestorArchivos::cargarHospital(hospital)) {
-        hospital = Hospital("Hospital General", "Calle Principal #123", "555-1234"); //Entonces le aigna valores genericos
         GestorArchivos::guardarHospital(hospital);
     }
     

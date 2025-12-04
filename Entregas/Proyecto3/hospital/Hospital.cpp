@@ -22,26 +22,6 @@ Hospital::Hospital() {
     totalConsultasRealizadas = 0;
 }
 
-Hospital::Hospital(const char* nombre, const char* direccion, const char* telefono) {
-    memset(this->nombre, 0, sizeof(this->nombre));
-    memset(this->direccion, 0, sizeof(this->direccion));
-    memset(this->telefono, 0, sizeof(this->telefono));
-    
-    strncpy(this->nombre, nombre, sizeof(this->nombre) - 1);
-    strncpy(this->direccion, direccion, sizeof(this->direccion) - 1);
-    strncpy(this->telefono, telefono, sizeof(this->telefono) - 1);
-    
-    siguienteIDPaciente = 1;
-    siguienteIDDoctor = 1;
-    siguienteIDCita = 1;
-    siguienteIDConsulta = 1;
-    
-    totalPacientesRegistrados = 0;
-    totalDoctoresRegistrados = 0;
-    totalCitasAgendadas = 0;
-    totalConsultasRealizadas = 0;
-}
-
 // Getters
 const char* Hospital::getNombre() const { return nombre; }
 const char* Hospital::getDireccion() const { return direccion; }

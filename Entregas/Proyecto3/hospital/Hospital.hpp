@@ -22,7 +22,6 @@ private:
 
 public:
     Hospital();
-    Hospital(const char* nombre, const char* direccion, const char* telefono);
     
     // Getters
     const char* getNombre() const;

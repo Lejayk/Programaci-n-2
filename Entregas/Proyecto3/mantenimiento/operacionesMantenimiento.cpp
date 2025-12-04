@@ -18,10 +18,15 @@ namespace fs = std::experimental::filesystem;
 #include <iomanip>
 #include <cstdio>
 #include <sys/stat.h>
+#include <cerrno>
+#include <fstream>
 
 #include "../persistencia/GestorArchivos.hpp"
 #include "../pacientes/Paciente.hpp"
 #include "../doctores/Doctor.hpp"
+#ifdef _WIN32
+#include <direct.h>
+#endif
 #include "../citas/Cita.hpp"
 #include "../historial/HistorialMedico.hpp"
 #include "../utilidades/Formatos.hpp"
@@ -42,6 +47,42 @@ static string timestamp() {
     strftime(buf, sizeof(buf), "%Y%m%d_%H%M%S", &local_tm);
     return string(buf);
 }
+
+static bool directorioExiste(const string& path) {
+    struct stat st;
+    if (stat(path.c_str(), &st) != 0) return false;
+#ifdef _WIN32
+    return (st.st_mode & _S_IFDIR) != 0;
+#else
+    return S_ISDIR(st.st_mode);
+#endif
+}
+
+static bool crearDirectorioSimple(const string& path) {
+#ifdef _WIN32
+    if (_mkdir(path.c_str()) == 0) return true;
+#else
+    if (mkdir(path.c_str(), 0755) == 0) return true;
+#endif
+    return errno == EEXIST;
+}
+
+static bool copiarArchivoBinario(const string& origen, const string& destino) {
+    ifstream in(origen, ios::binary);
+    if (!in.is_open()) return false;
+    ofstream out(destino, ios::binary);
+    if (!out.is_open()) return false;
+    out << in.rdbuf();
+    return out.good();
+}
+
+static const vector<string> archivosDatosBasicos = {
+    "pacientes.bin",
+    "doctores.bin",
+    "citas.bin",
+    "historiales.bin",
+    "hospital.bin"
+};
 
 void pauseAndClear() {
     system("pause");
@@ -106,7 +147,24 @@ void crearRespaldo() {
         cout << "Error al crear respaldo: " << e.what() << endl;
     }
 #else
-    cout << "Crear respaldo: <filesystem> no disponible en este compilador. Operacion no soportada." << endl;
+    cout << "Creando respaldo (modo compatibilidad)..." << endl;
+    if (!directorioExiste("datos")) {
+        cout << "No existe la carpeta 'datos' para respaldar." << endl;
+        return;
+    }
+    string dest = string("backup_") + timestamp();
+    if (!crearDirectorioSimple(dest)) {
+        cout << "No se pudo crear el directorio de respaldo: " << dest << endl;
+        return;
+    }
+    for (const auto& archivo : archivosDatosBasicos) {
+        string origen = string("datos/") + archivo;
+        string destino = dest + "/" + archivo;
+        if (!copiarArchivoBinario(origen, destino)) {
+            cout << "Advertencia: no se pudo copiar " << origen << endl;
+        }
+    }
+    cout << "Respaldo creado en: " << dest << endl;
 #endif
 }
 
@@ -134,7 +192,29 @@ void restaurarRespaldo() {
         cout << "Error al restaurar respaldo: " << e.what() << endl;
     }
 #else
-    cout << "Restaurar respaldo: <filesystem> no disponible en este compilador. Operacion no soportada." << endl;
+    cout << "Restaurar respaldo (modo compatibilidad). Nombre del directorio: ";
+    char buffer[256];
+    Formatos::leerLinea(buffer, 256);
+    string dir(buffer);
+    if (dir.empty()) {
+        cout << "Operacion cancelada." << endl;
+        return;
+    }
+    if (!directorioExiste(dir)) {
+        cout << "Directorio de respaldo no encontrado." << endl;
+        return;
+    }
+    if (!directorioExiste("datos")) {
+        crearDirectorioSimple("datos");
+    }
+    for (const auto& archivo : archivosDatosBasicos) {
+        string origen = dir + "/" + archivo;
+        string destino = string("datos/") + archivo;
+        if (!copiarArchivoBinario(origen, destino)) {
+            cout << "Advertencia: no se pudo restaurar " << origen << endl;
+        }
+    }
+    cout << "Restauracion completada desde: " << dir << endl;
 #endif
 }
 
@@ -245,6 +325,19 @@ void verificarSistemaArchivos() {
         else cout << "OK: " << f << endl;
     }
 #else
-    cout << "Verificar sistema de archivos: <filesystem> no disponible en este compilador. Operacion no soportada." << endl;
+    cout << "Verificando sistema de archivos (modo compatibilidad)..." << endl;
+    if (!directorioExiste("datos")) {
+        cout << "Carpeta 'datos' no existe." << endl;
+        return;
+    }
+    for (const auto &archivo : archivosDatosBasicos) {
+        string ruta = string("datos/") + archivo;
+        ifstream in(ruta, ios::binary);
+        if (in.is_open()) {
+            cout << "OK: " << ruta << endl;
+        } else {
+            cout << "Falta: " << ruta << endl;
+        }
+    }
 #endif
 }
